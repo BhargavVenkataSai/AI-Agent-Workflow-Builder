@@ -10,12 +10,18 @@ export default function NewWorkflow() {
   const { selectedOrgId } = useOrg();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const [createWorkflow, { loading }] = useMutation(CREATE_WORKFLOW);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOrgId) return;
+    setErrorMessage(null);
+
+    if (!selectedOrgId) {
+      setErrorMessage('No organization selected. Your user account must belong to an organization before creating a workflow.');
+      return;
+    }
 
     try {
       const { data } = await createWorkflow({
@@ -32,9 +38,9 @@ export default function NewWorkflow() {
       if (data?.insert_workflows_one?.id) {
         router.push(`/dashboard/workflows/${data.insert_workflows_one.id}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating workflow:', err);
-      alert('Failed to create workflow');
+      setErrorMessage(err.message || 'Failed to create workflow');
     }
   };
 
@@ -50,6 +56,34 @@ export default function NewWorkflow() {
       
       <div className="page-body">
         <div className="glass-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+          {errorMessage && (
+            <div style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
+              marginBottom: '1rem',
+              fontSize: '0.875rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#f87171'
+            }}>
+              {errorMessage}
+            </div>
+          )}
+
+          {!selectedOrgId && !errorMessage && (
+            <div style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
+              marginBottom: '1rem',
+              fontSize: '0.875rem',
+              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              color: '#fbbf24'
+            }}>
+              ⚠️ No organization selected. Please ensure your user account is assigned to an organization in Nhost.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">Workflow Name</label>
@@ -76,7 +110,7 @@ export default function NewWorkflow() {
             <button 
               type="submit" 
               className="btn btn-primary" 
-              disabled={loading || !name.trim()}
+              disabled={loading || !name.trim() || !selectedOrgId}
               style={{ marginTop: '1rem' }}
             >
               {loading ? 'Creating...' : 'Create Workflow'}

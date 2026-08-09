@@ -177,8 +177,11 @@ As requested, the Hasura permission YAML has been corrected. Below are the resul
           - attempt_count
           - approved_by
           - approved_at
+  delete_permissions:
+    - role: user
+      permission:
         filter:
-          workflow_run:
+          workflow:
             organization:
               org_members:
                 user_id:
@@ -251,3 +254,21 @@ As requested, the Hasura permission YAML has been corrected. Below are the resul
                     role:
                       _eq: owner
 ```
+
+---
+
+## 6. Session Debugging & Issue Resolution Timeline
+
+Below is the complete record of errors encountered during system setup, deployment, and configuration, along with their root causes and verified solutions.
+
+| # | Error / Symptom | Root Cause | Resolution / Fix Applied |
+|---|---|---|---|
+| **1** | `error: replacing config: #Config.global.environment: 2 errors in empty disjunction` | `nhost/nhost.toml` was missing `[[global.environment]]` declarations for secrets, causing CUE schema validation failure during Nhost deployment. | Updated `nhost/nhost.toml` to explicitly map `GROQ_API_KEY` and `OPENROUTER_API_KEY` to `{{ secrets.* }}`. Populated `nhost/.secrets` with local values. |
+| **2** | `net::ERR_NAME_NOT_RESOLVED` on `diurddjlfgkyeeyylcp.auth.ap-south-1.nhost.run/v1/signup` | Subdomain typo in `web/.env.local`: `diurddjlfgkyeeyylcp` (missing an `'l'`) instead of `diurddjlflgkyeeyylcp`. | Updated `NEXT_PUBLIC_NHOST_SUBDOMAIN=diurddjlflgkyeeyylcp` in `web/.env.local`. |
+| **3** | `409 (Conflict)` on sign up & `401 (Unauthorized)` / `"User is already signed in"` on sign in | 1. Account was already created in prior attempts.<br>2. Next.js login page did not clear active Nhost sessions when switching accounts. | Updated `web/src/app/login/page.tsx` using `useAuthenticationStatus()` and `useSignOut()` to auto-logout existing sessions when signing in with a new account. Added auto-login and visual notification banners. |
+| **4** | "Create Workflow" button silently doing nothing | `NewWorkflow` component had `if (!selectedOrgId) return;` which silently aborted form submission when a user did not belong to any organization in PostgreSQL. | 1. Updated `web/src/app/dashboard/workflows/new/page.tsx` to render explicit warning banners and error messages.<br>2. Linked user accounts to `Acme AI Labs` organization in PostgreSQL. |
+| **5** | SQL Execution Failed: `relation "public.organizations" does not exist` | Database tables had not yet been created in PostgreSQL on Nhost Cloud. | Combined initial schema (`0001_initial_schema/up.sql`), corrections (`0002_schema_corrections/up.sql`), and seed data (`001_demo_data.sql`) into a unified master SQL script and executed it via Hasura Console SQL tab. |
+| **6** | `ApolloError: no mutations exist` when creating a workflow | Hasura GraphQL Engine on Nhost Cloud did not have table permissions configured for the `user` role. | Created and executed a PowerShell automation script (`scratch/apply_permissions.ps1`) using the cloud Hasura Admin Secret to configure `SELECT`, `INSERT`, `UPDATE`, and `DELETE` permissions for the `user` role across all 8 core tables. |
+| **7** | `field 'triggerWorkflowRun' not found in type: 'mutation_root'` | Custom Hasura Actions (`triggerWorkflowRun`, `approveStep`, `webhookTrigger`) and custom output types (`TriggerWorkflowRunOutput`, `ApproveStepOutput`) were not registered in Hasura Cloud. | Created and executed a PowerShell script (`scratch/apply_actions.ps1`) that registered the custom object types, actions, and permissions for the `user` role via the Hasura Metadata API (`/v1/metadata`). |
+| **8** | Untracked foreign-key relationships causing empty organization list | Hasura Engine created the PostgreSQL tables, but foreign-key relationships (`org_members -> organizations`) were untracked, causing GraphQL nested joins to return empty array (`[]`). | Tracked all 8 tables and 14 foreign-key relationships in Hasura Console under **DATA → Schema public**. |
+

@@ -15,12 +15,13 @@ import { executeWorkflow } from './_lib/workflow-engine';
  */
 export default async (req: Request, res: Response) => {
   try {
-    const { step_run_id } = req.body.input;
-    const sessionVars = req.body.session_variables;
+    const body = req.body || {};
+    const step_run_id = body.input?.step_run_id || body.step_run_id;
+    const sessionVars = body.session_variables;
     const userId = sessionVars?.['x-hasura-user-id'];
 
     if (!userId) {
-      return res.status(403).json({ message: 'Unauthorized: No user ID in session' });
+      return res.status(400).json({ message: 'Unauthorized: No user ID in session' });
     }
 
     // Fetch step_run with full chain to verify org membership
@@ -63,7 +64,7 @@ export default async (req: Request, res: Response) => {
     const stepRun = data.step_runs_by_pk;
 
     if (!stepRun) {
-      return res.status(404).json({ message: 'Step run not found' });
+      return res.status(400).json({ message: 'Step run not found' });
     }
 
     // Verify step is actually awaiting approval
@@ -92,13 +93,13 @@ export default async (req: Request, res: Response) => {
       stepRun.workflow_run?.workflow?.organization?.org_members?.[0];
 
     if (!membership) {
-      return res.status(403).json({
+      return res.status(400).json({
         message: 'Forbidden: You are not a member of this organization',
       });
     }
 
     if (membership.role !== 'owner' && membership.role !== 'editor') {
-      return res.status(403).json({
+      return res.status(400).json({
         message: 'Forbidden: Only owners and editors can approve steps',
       });
     }
@@ -158,6 +159,6 @@ export default async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[approveStep] Error:', error);
-    return res.status(500).json({ message: error.message || 'Internal server error' });
+    return res.status(400).json({ message: error.message || 'Internal server error' });
   }
 };

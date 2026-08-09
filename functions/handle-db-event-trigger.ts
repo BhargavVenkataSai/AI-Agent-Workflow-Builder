@@ -10,8 +10,8 @@ import { executeWorkflow } from './_lib/workflow-engine';
  */
 export default async (req: Request, res: Response) => {
   try {
-    const event = req.body.event;
-    if (!event) {
+    const event = req.body?.event;
+    if (!event || !event.data || !event.data.new) {
       return res.status(400).json({ message: 'No event data' });
     }
 

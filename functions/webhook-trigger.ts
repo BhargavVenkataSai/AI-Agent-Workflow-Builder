@@ -11,11 +11,12 @@ import { executeWorkflow } from './_lib/workflow-engine';
  */
 export default async (req: Request, res: Response) => {
   try {
-    // This is an external webhook endpoint, NOT a Hasura Action
-    const workflow_id = req.body.workflow_id;
-    const payload = req.body.payload || {};
+    // Supports direct HTTP webhook call or Hasura Action call
+    const body = req.body || {};
+    const workflow_id = body.input?.workflow_id || body.workflow_id;
+    const payload = body.input?.payload || body.payload || {};
 
-    const webhookSecret = req.headers['x-webhook-secret'] as string;
+    const webhookSecret = (req.headers?.['x-webhook-secret'] as string) || body.secret || body.input?.secret;
 
     if (!workflow_id) {
       return res.status(400).json({ message: 'Missing workflow_id' });
@@ -54,7 +55,7 @@ export default async (req: Request, res: Response) => {
     const workflow = data.workflows_by_pk;
 
     if (!workflow) {
-      return res.status(404).json({ message: 'Workflow not found' });
+      return res.status(400).json({ message: 'Workflow not found' });
     }
 
     if (!workflow.is_active) {
@@ -72,7 +73,7 @@ export default async (req: Request, res: Response) => {
     const trigger = workflow.workflow_triggers[0];
     const expectedSecret = trigger.config?.secret;
     if (expectedSecret && expectedSecret !== webhookSecret) {
-      return res.status(403).json({ message: 'Invalid webhook secret' });
+      return res.status(400).json({ message: 'Invalid webhook secret' });
     }
 
     // Check quota
@@ -136,6 +137,6 @@ export default async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[webhookTrigger] Error:', error);
-    return res.status(500).json({ message: error.message || 'Internal server error' });
+    return res.status(400).json({ message: error.message || 'Internal server error' });
   }
 };

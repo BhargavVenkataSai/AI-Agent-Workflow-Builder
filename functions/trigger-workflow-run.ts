@@ -12,12 +12,13 @@ import { executeWorkflow } from './_lib/workflow-engine';
  */
 export default async (req: Request, res: Response) => {
   try {
-    const { workflow_id } = req.body.input;
-    const sessionVars = req.body.session_variables;
+    const body = req.body || {};
+    const workflow_id = body.input?.workflow_id || body.workflow_id;
+    const sessionVars = body.session_variables;
     const userId = sessionVars?.['x-hasura-user-id'];
 
     if (!userId) {
-      return res.status(403).json({ message: 'Unauthorized: No user ID in session' });
+      return res.status(400).json({ message: 'Unauthorized: No user ID in session' });
     }
 
     // Fetch workflow with org membership and quota
@@ -54,7 +55,7 @@ export default async (req: Request, res: Response) => {
     const workflow = workflowData.workflows_by_pk;
 
     if (!workflow) {
-      return res.status(404).json({ message: 'Workflow not found' });
+      return res.status(400).json({ message: 'Workflow not found' });
     }
 
     if (!workflow.is_active) {
@@ -66,13 +67,13 @@ export default async (req: Request, res: Response) => {
     const membership = org.org_members?.[0];
 
     if (!membership) {
-      return res.status(403).json({
+      return res.status(400).json({
         message: 'Forbidden: You are not a member of this organization',
       });
     }
 
     if (membership.role !== 'owner' && membership.role !== 'editor') {
-      return res.status(403).json({
+      return res.status(400).json({
         message: 'Forbidden: Viewers cannot trigger workflow runs',
       });
     }
@@ -140,6 +141,6 @@ export default async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[triggerWorkflowRun] Error:', error);
-    return res.status(500).json({ message: error.message || 'Internal server error' });
+    return res.status(400).json({ message: error.message || 'Internal server error' });
   }
 };

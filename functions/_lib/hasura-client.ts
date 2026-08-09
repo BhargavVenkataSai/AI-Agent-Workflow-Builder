@@ -1,7 +1,9 @@
 export async function queryHasura(query: string, variables: Record<string, any> = {}) {
   const hasuraUrl =
+    process.env.NHOST_GRAPHQL_URL ||
     process.env.NHOST_HASURA_URL ||
-    'http://graphql:8080/v1/graphql';
+    process.env.HASURA_GRAPHQL_URL ||
+    'http://localhost:1337/v1/graphql';
   
   const adminSecret =
     process.env.NHOST_ADMIN_SECRET ||
