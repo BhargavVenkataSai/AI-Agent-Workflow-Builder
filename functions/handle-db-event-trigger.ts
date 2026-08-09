@@ -76,6 +76,7 @@ export default async (req: Request, res: Response) => {
       `,
         {
           object: {
+            org_id: orgId,
             workflow_id: workflow.id,
             status: 'running',
             trigger_type: 'database_event',

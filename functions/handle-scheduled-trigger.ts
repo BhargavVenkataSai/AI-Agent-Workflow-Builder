@@ -69,6 +69,7 @@ export default async (req: Request, res: Response) => {
       `,
         {
           object: {
+            org_id: workflow.org_id,
             workflow_id: workflow.id,
             status: 'running',
             trigger_type: 'scheduled',

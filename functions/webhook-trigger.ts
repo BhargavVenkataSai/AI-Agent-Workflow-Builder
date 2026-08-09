@@ -11,19 +11,9 @@ import { executeWorkflow } from './_lib/workflow-engine';
  */
 export default async (req: Request, res: Response) => {
   try {
-    // This can be called either as a Hasura Action or as a direct webhook
-    let workflow_id: string;
-    let payload: any;
-
-    if (req.body.input) {
-      // Called as Hasura Action
-      workflow_id = req.body.input.workflow_id;
-      payload = req.body.input.payload || {};
-    } else {
-      // Called as direct webhook
-      workflow_id = req.body.workflow_id;
-      payload = req.body.payload || {};
-    }
+    // This is an external webhook endpoint, NOT a Hasura Action
+    const workflow_id = req.body.workflow_id;
+    const payload = req.body.payload || {};
 
     const webhookSecret = req.headers['x-webhook-secret'] as string;
 
@@ -104,6 +94,7 @@ export default async (req: Request, res: Response) => {
     `;
     const runResult = await mutateHasura(createRunMutation, {
       object: {
+        org_id: workflow.org_id,
         workflow_id: workflow_id,
         status: 'running',
         trigger_type: 'webhook',

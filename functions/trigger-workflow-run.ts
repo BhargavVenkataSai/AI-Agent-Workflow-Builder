@@ -98,6 +98,7 @@ export default async (req: Request, res: Response) => {
     `;
     const runResult = await mutateHasura(createRunMutation, {
       object: {
+        org_id: workflow.org_id,
         workflow_id: workflow_id,
         status: 'running',
         trigger_type: 'manual',
