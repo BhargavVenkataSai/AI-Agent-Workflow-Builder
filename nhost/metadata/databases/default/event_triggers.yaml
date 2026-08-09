@@ -1,0 +1,19 @@
+- name: watched_records_insert
+  definition:
+    type: data
+    args:
+      source: default
+      table:
+        schema: public
+        name: watched_records
+      webhook: '{{NHOST_FUNCTIONS_URL}}/v1/handle-db-event-trigger'
+      insert:
+        columns: '*'
+      headers:
+        - name: x-hasura-admin-secret
+          value_from_env: HASURA_GRAPHQL_ADMIN_SECRET
+      retry_conf:
+        num_retries: 3
+        interval_sec: 10
+        timeout_sec: 60
+  comment: Triggers workflow runs when new records are inserted into watched_records

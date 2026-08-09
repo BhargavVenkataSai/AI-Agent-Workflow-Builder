@@ -1,0 +1,13 @@
+- name: scheduled_workflow_trigger
+  definition:
+    schedule: '*/5 * * * *'
+    webhook: '{{NHOST_FUNCTIONS_URL}}/v1/handle-scheduled-trigger'
+    include_in_metadata: true
+    headers:
+      - name: x-hasura-admin-secret
+        value_from_env: HASURA_GRAPHQL_ADMIN_SECRET
+    retry_conf:
+      num_retries: 2
+      retry_interval_seconds: 15
+      timeout_seconds: 60
+  comment: Runs every 5 minutes to check for scheduled workflows

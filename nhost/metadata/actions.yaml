@@ -1,0 +1,47 @@
+actions:
+  - name: triggerWorkflowRun
+    definition:
+      kind: synchronous
+      handler: '{{NHOST_FUNCTIONS_URL}}/v1/trigger-workflow-run'
+      forward_client_headers: true
+    permissions:
+      - role: user
+    comment: Trigger a workflow run. Verifies caller is owner/editor and checks quota.
+  - name: approveStep
+    definition:
+      kind: synchronous
+      handler: '{{NHOST_FUNCTIONS_URL}}/v1/approve-step'
+      forward_client_headers: true
+    permissions:
+      - role: user
+    comment: Approve a paused approval_gate step. Layer 2 permission check in handler.
+  - name: webhookTrigger
+    definition:
+      kind: synchronous
+      handler: '{{NHOST_FUNCTIONS_URL}}/v1/webhook-trigger'
+      forward_client_headers: true
+    permissions:
+      - role: user
+    comment: Webhook endpoint to trigger a workflow run from external systems.
+
+custom_types:
+  input_objects: []
+  objects:
+    - name: TriggerWorkflowRunOutput
+      fields:
+        - name: workflow_run_id
+          type: uuid!
+        - name: status
+          type: String!
+        - name: message
+          type: String!
+    - name: ApproveStepOutput
+      fields:
+        - name: success
+          type: Boolean!
+        - name: message
+          type: String!
+        - name: workflow_run_id
+          type: uuid!
+  scalars: []
+  enums: []
