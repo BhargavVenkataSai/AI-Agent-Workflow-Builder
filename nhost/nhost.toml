@@ -1,11 +1,3 @@
-[global]
-[[global.environment]]
-name = 'NHOST_WEBHOOK_SECRET'
-value = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
-
-[[global.environment]]
-name = 'GROQ_API_KEY'
-value = '{{ secrets.GROQ_API_KEY }}'
 
 [hasura]
 version = 'v2.44.0-ce'
