@@ -312,11 +312,7 @@ async function executeWorkflow(workflowRunId: string, startFrom = 0) {
     }
 
     await updateRunStatus(workflowRunId, 'completed');
-    await gql(
-      `mutation IncQuota($orgId: uuid!) { update_organizations_by_pk(pk_columns: {id: $orgId}, _inc: {quota_used: 1}) { id quota_used } }`,
-      { orgId: run.workflow.org_id }
-    );
-    console.log(`[Workflow ${workflowRunId}] Completed. Quota incremented.`);
+    console.log(`[Workflow ${workflowRunId}] Completed.`);
   } catch (error: any) {
     console.error(`[Workflow ${workflowRunId}] Execution error:`, error);
     try { await updateRunStatus(workflowRunId, 'failed'); } catch {}
@@ -372,7 +368,15 @@ export async function POST(req: NextRequest) {
         { message: 'Forbidden: Viewers cannot trigger workflow runs' },
         { status: 400 }
       );
-    if (org.quota_used >= org.quota_limit)
+
+    // Atomic quota reservation
+    const quotaRes = await gql(
+      `mutation ReserveTriggerQuota($orgId: uuid!) {
+        check_and_increment_quota(args: {p_org_id: $orgId})
+      }`,
+      { orgId: workflow.org_id }
+    );
+    if (!quotaRes?.check_and_increment_quota)
       return NextResponse.json(
         { message: `Organization quota exceeded (${org.quota_used}/${org.quota_limit})` },
         { status: 400 }

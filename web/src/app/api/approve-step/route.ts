@@ -215,7 +215,6 @@ async function executeWorkflow(workflowRunId: string, startFrom = 0) {
     }
 
     await updateRunStatus(workflowRunId, 'completed');
-    await gql(`mutation IncQ($oid: uuid!) { update_organizations_by_pk(pk_columns: {id: $oid}, _inc: {quota_used: 1}) { id } }`, { oid: run.workflow.org_id });
   } catch (error: any) {
     console.error(`[Workflow ${workflowRunId}] Error:`, error);
     try { await updateRunStatus(workflowRunId, 'failed'); } catch {}

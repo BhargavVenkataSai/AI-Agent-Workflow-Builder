@@ -82,7 +82,7 @@ export default async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid webhook secret' });
     }
 
-    // Atomic quota reservation via Postgres function or database query
+    // Atomic quota reservation via Postgres function
     const quotaRes = await mutateHasura(
       `
       mutation ReserveWebhookQuota($orgId: uuid!) {
@@ -90,18 +90,9 @@ export default async (req: Request, res: Response) => {
       }
     `,
       { orgId: workflow.org_id }
-    ).catch(async () => {
-      // Fallback if custom function is not yet tracked in Hasura metadata
-      const org = workflow.organization;
-      if (org.quota_used >= org.quota_limit) return { check_and_increment_quota: false };
-      await mutateHasura(
-        `mutation IncQuota($orgId: uuid!) { update_organizations_by_pk(pk_columns: {id: $orgId}, _inc: {quota_used: 1}) { id } }`,
-        { orgId: workflow.org_id }
-      );
-      return { check_and_increment_quota: true };
-    });
+    );
 
-    if (!quotaRes.check_and_increment_quota) {
+    if (!quotaRes?.check_and_increment_quota) {
       return res.status(400).json({
         message: `Organization quota exceeded for org ${workflow.org_id}`,
       });

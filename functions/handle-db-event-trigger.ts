@@ -60,10 +60,18 @@ export default async (req: Request, res: Response) => {
     const triggeredRuns: string[] = [];
 
     for (const workflow of workflows) {
-      // Check quota
-      const org = workflow.organization;
-      if (org.quota_used >= org.quota_limit) {
-        console.log(`[dbEventTrigger] Quota exceeded for org, skipping workflow ${workflow.id}`);
+      // Atomic quota reservation
+      const quotaRes = await mutateHasura(
+        `
+        mutation ReserveDbEventQuota($orgId: uuid!) {
+          check_and_increment_quota(args: {p_org_id: $orgId})
+        }
+      `,
+        { orgId }
+      );
+
+      if (!quotaRes?.check_and_increment_quota) {
+        console.log(`[dbEventTrigger] Quota exceeded for org ${orgId}, skipping workflow ${workflow.id}`);
         continue;
       }
 

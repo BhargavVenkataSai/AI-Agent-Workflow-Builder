@@ -473,8 +473,8 @@ async function main() {
       }
     `, { id: runId });
 
-    // Increment quota
-    await gqlAdmin(`mutation IncQ($oid: uuid!) { update_organizations_by_pk(pk_columns: {id: $oid}, _inc: {quota_used: 1}) { id quota_used } }`, { oid: orgId });
+    // Increment quota via atomic function
+    await gqlAdmin(`mutation IncQ($oid: uuid!) { check_and_increment_quota(args: {p_org_id: $oid}) }`, { oid: orgId });
 
     // ── Final verification: dump all step_runs for this run ────
     console.log('\n━━━ EVIDENCE: Final step_runs state ━━━');
