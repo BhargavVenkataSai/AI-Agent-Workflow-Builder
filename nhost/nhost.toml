@@ -36,6 +36,9 @@ clientUrl = 'http://localhost:3000'
 [postgres]
 version = '14.11-20240515-1'
 
+[postgres.resources.storage]
+capacity = 1
+
 [storage]
 version = '0.6.1'
 
