@@ -1,8 +1,9 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useSubscription, useMutation } from '@apollo/client';
-import { WATCH_WORKFLOW_RUN, WATCH_STEP_RUNS, APPROVE_STEP } from '@/lib/graphql';
+import { useSubscription } from '@apollo/client';
+import { useUserData } from '@nhost/nextjs';
+import { WATCH_WORKFLOW_RUN, WATCH_STEP_RUNS } from '@/lib/graphql';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StepTypeIcon } from '@/components/StepTypeIcon';
 
@@ -12,8 +13,8 @@ export default function RunViewer() {
 
   const { data: runData } = useSubscription(WATCH_WORKFLOW_RUN, { variables: { runId: id } });
   const { data: stepsData } = useSubscription(WATCH_STEP_RUNS, { variables: { workflowRunId: id } });
-  
-  const [approveStep, { loading: isApproving }] = useMutation(APPROVE_STEP);
+  const user = useUserData();
+  const [isApproving, setIsApproving] = useState(false);
 
   const run = runData?.workflow_runs_by_pk;
   const steps = stepsData?.step_runs || [];
@@ -24,12 +25,25 @@ export default function RunViewer() {
     }
   }, [steps]);
 
+  // SINGLE deterministic execution path: direct API call to /api/approve-step
+  // No Hasura Action mutation, no fallback pattern.
   const handleApprove = async (stepRunId: string) => {
+    setIsApproving(true);
     try {
-      await approveStep({ variables: { stepRunId } });
-    } catch (err) {
+      const res = await fetch('/api/approve-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stepRunId, userId: user?.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to approve step');
+      }
+    } catch (err: any) {
       console.error('Error approving step:', err);
-      alert('Failed to approve step');
+      alert(err.message || 'Failed to approve step');
+    } finally {
+      setIsApproving(false);
     }
   };
 

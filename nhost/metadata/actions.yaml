@@ -6,7 +6,12 @@ actions:
       forward_client_headers: true
     permissions:
       - role: user
-    comment: Trigger a workflow run. Verifies caller is owner/editor and checks quota.
+    comment: >
+      Trigger a workflow run. Verifies caller is owner/editor and checks quota.
+      Handler URL points to the Next.js API route (deployed on Vercel or localhost).
+      When deployed, set NHOST_FUNCTIONS_URL to e.g. https://your-vercel-app.vercel.app/api
+      or override the handler URL directly to https://your-vercel-app.vercel.app/api/trigger-workflow-run.
+      forward_client_headers ensures x-hasura-user-id and x-hasura-role are forwarded in session_variables.
   - name: approveStep
     definition:
       kind: synchronous
@@ -14,7 +19,10 @@ actions:
       forward_client_headers: true
     permissions:
       - role: user
-    comment: Approve a paused approval_gate step. Layer 2 permission check in handler.
+    comment: >
+      Approve a paused approval_gate step. Layer 2 permission check in handler.
+      Handler URL points to the Next.js API route (deployed on Vercel or localhost).
+      forward_client_headers ensures x-hasura-user-id and x-hasura-role are forwarded in session_variables.
   - name: webhookTrigger
     definition:
       kind: synchronous

@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_WORKFLOW_DETAIL, UPDATE_WORKFLOW, TRIGGER_WORKFLOW_RUN } from '@/lib/graphql';
+import { useUserData } from '@nhost/nextjs';
+import { GET_WORKFLOW_DETAIL, UPDATE_WORKFLOW } from '@/lib/graphql';
 import { useOrg } from '@/components/OrgContext';
 import { StepTypeIcon } from '@/components/StepTypeIcon';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -68,8 +69,9 @@ export default function WorkflowDetail() {
     skip: !id,
   });
 
-  const [triggerRun, { loading: isTriggering }] = useMutation(TRIGGER_WORKFLOW_RUN);
   const [updateWorkflow, { loading: isSaving }] = useMutation(UPDATE_WORKFLOW);
+  const [isTriggering, setIsTriggering] = useState(false);
+  const user = useUserData();
 
   const [editMode, setEditMode] = useState(false);
   const [steps, setSteps] = useState<any[]>([]);
@@ -192,14 +194,27 @@ export default function WorkflowDetail() {
     }
   };
 
+  // SINGLE deterministic execution path: direct API call to /api/trigger-workflow-run
+  // No Hasura Action mutation, no fallback pattern.
   const handleRun = async () => {
+    setIsTriggering(true);
     try {
-      const { data } = await triggerRun({ variables: { workflowId: id } });
-      if (data?.triggerWorkflowRun?.workflow_run_id) {
-        router.push(`/dashboard/runs/${data.triggerWorkflowRun.workflow_run_id}`);
+      const res = await fetch('/api/trigger-workflow-run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflow_id: id, userId: user?.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Error triggering run');
+      }
+      if (data.workflow_run_id) {
+        router.push(`/dashboard/runs/${data.workflow_run_id}`);
       }
     } catch (err: any) {
       alert(err.message || 'Error triggering run');
+    } finally {
+      setIsTriggering(false);
     }
   };
 
