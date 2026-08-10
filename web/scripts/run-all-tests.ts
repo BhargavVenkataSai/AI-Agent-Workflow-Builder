@@ -225,15 +225,27 @@ async function main() {
       fail('Cross-org isolation BROKEN', `owner_b can see ${leakedWorkflows.length} Acme workflows!`);
     }
 
-    // owner_b queries workflow_runs — should NOT see Acme runs
-    const ownerBRuns = await gqlUser(sessions.owner_b.token, '{ workflow_runs { id status } }');
+    // owner_b queries workflow_runs — must ONLY see Beta Corp runs, 0 Acme runs
+    const betaOrgId = '7433852f-8f18-481e-8823-7d995ca1020a';
+    const ownerBRuns = await gqlUser(sessions.owner_b.token, '{ workflow_runs { id status org_id } }');
     const bRuns = ownerBRuns.data?.workflow_runs || [];
-    pass('Org B user workflow_runs query', `returns ${bRuns.length} runs (should be 0 or only Beta Corp runs)`);
+    const leakedRuns = bRuns.filter((r: any) => r.org_id === acmeOrgId);
+    const invalidOrgRuns = bRuns.filter((r: any) => r.org_id !== betaOrgId);
+    if (leakedRuns.length === 0 && invalidOrgRuns.length === 0) {
+      pass('Org B user workflow_runs query strict isolation', `owner_b sees ${bRuns.length} runs (all belonging strictly to Beta Corp)`);
+    } else {
+      fail('Cross-org workflow_runs DATA LEAK DETECTED', `owner_b retrieved ${leakedRuns.length} Acme runs! Total returned: ${bRuns.length}`);
+    }
 
-    // owner_b queries step_runs — should NOT see Acme step_runs
-    const ownerBStepRuns = await gqlUser(sessions.owner_b.token, '{ step_runs { id } }');
+    // owner_b queries step_runs — must ONLY see step_runs from Beta Corp workflow_runs
+    const ownerBStepRuns = await gqlUser(sessions.owner_b.token, '{ step_runs { id workflow_run { org_id } } }');
     const bStepRuns = ownerBStepRuns.data?.step_runs || [];
-    pass('Org B user step_runs query', `returns ${bStepRuns.length} step_runs`);
+    const leakedStepRuns = bStepRuns.filter((sr: any) => sr.workflow_run?.org_id === acmeOrgId);
+    if (leakedStepRuns.length === 0) {
+      pass('Org B user step_runs query strict isolation', `owner_b sees ${bStepRuns.length} step_runs (all belonging strictly to Beta Corp)`);
+    } else {
+      fail('Cross-org step_runs DATA LEAK DETECTED', `owner_b retrieved ${leakedStepRuns.length} Acme step_runs! Total returned: ${bStepRuns.length}`);
+    }
 
     // owner_a queries — SHOULD see Acme workflows
     const ownerAWorkflows = await gqlUser(sessions.owner_a.token, '{ workflows { id name } }');
