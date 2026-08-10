@@ -403,17 +403,14 @@
           - completed_at
           - error
         check:
-          _and:
-            - organization:
-                org_members:
-                  user_id:
-                    _eq: X-Hasura-User-Id
-            - organization:
-                org_members:
-                  role:
-                    _in:
-                      - owner
-                      - editor
+          organization:
+            org_members:
+              user_id:
+                _eq: X-Hasura-User-Id
+              role:
+                _in:
+                  - owner
+                  - editor
 
 - table:
     schema: public
