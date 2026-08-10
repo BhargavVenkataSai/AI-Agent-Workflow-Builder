@@ -17,3 +17,25 @@
         interval_sec: 10
         timeout_sec: 60
   comment: Triggers workflow runs when new records are inserted into watched_records
+
+- name: step_runs_notify
+  definition:
+    type: data
+    args:
+      source: default
+      table:
+        schema: public
+        name: step_runs
+      webhook: '{{NHOST_FUNCTIONS_URL}}/v1/handle-notify'
+      update:
+        columns:
+          - status
+      headers:
+        - name: x-hasura-admin-secret
+          value_from_env: HASURA_GRAPHQL_ADMIN_SECRET
+      retry_conf:
+        num_retries: 3
+        interval_sec: 10
+        timeout_sec: 60
+  comment: Triggers handle-notify function via Event Trigger when a step_run transitions status
+

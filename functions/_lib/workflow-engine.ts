@@ -205,21 +205,8 @@ export async function executeWorkflow(
 
     // All steps completed successfully
     await updateWorkflowRunStatus(workflowRunId, 'completed');
+    console.log(`[Workflow ${workflowRunId}] Completed successfully for org ${workflow.org_id}.`);
 
-    // Increment org quota
-    const incrementQuotaMutation = `
-      mutation IncrementOrgQuota($orgId: uuid!) {
-        update_organizations_by_pk(
-          pk_columns: {id: $orgId},
-          _inc: {quota_used: 1}
-        ) {
-          id
-          quota_used
-        }
-      }
-    `;
-    await mutateHasura(incrementQuotaMutation, { orgId: workflow.org_id });
-    console.log(`[Workflow ${workflowRunId}] Completed successfully. Quota incremented for org ${workflow.org_id}.`);
 
   } catch (error: any) {
     console.error(`[Workflow ${workflowRunId}] Execution error:`, error);

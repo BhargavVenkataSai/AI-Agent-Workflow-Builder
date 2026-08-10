@@ -11,14 +11,8 @@ async function updateLiveActions() {
           name: 'triggerWorkflowRun',
           definition: {
             kind: 'synchronous',
-            handler: 'https://few-humans-walk.loca.lt/api/trigger-workflow-run',
+            handler: '{{NHOST_FUNCTIONS_URL}}/v1/trigger-workflow-run',
             forward_client_headers: true,
-            headers: [
-              {
-                name: 'Bypass-Tunnel-Reminder',
-                value: 'true'
-              }
-            ],
             output_type: 'TriggerWorkflowRunOutput',
             arguments: [
               {
@@ -35,14 +29,8 @@ async function updateLiveActions() {
           name: 'approveStep',
           definition: {
             kind: 'synchronous',
-            handler: 'https://few-humans-walk.loca.lt/api/approve-step',
+            handler: '{{NHOST_FUNCTIONS_URL}}/v1/approve-step',
             forward_client_headers: true,
-            headers: [
-              {
-                name: 'Bypass-Tunnel-Reminder',
-                value: 'true'
-              }
-            ],
             output_type: 'ApproveStepOutput',
             arguments: [
               {
@@ -53,6 +41,7 @@ async function updateLiveActions() {
           }
         }
       }
+
     ]
   };
 

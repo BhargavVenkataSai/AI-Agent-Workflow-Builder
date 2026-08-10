@@ -260,16 +260,47 @@
           - name
           - config
         filter:
-          workflow:
-            organization:
-              org_members:
-                user_id:
-                  _eq: X-Hasura-User-Id
-                role:
-                  _in:
-                    - owner
-                    - editor
-        check: null
+          _or:
+            - workflow:
+                organization:
+                  org_members:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                    role:
+                      _eq: owner
+            - _and:
+                - workflow:
+                    organization:
+                      org_members:
+                        user_id:
+                          _eq: X-Hasura-User-Id
+                        role:
+                          _eq: editor
+                - step_type:
+                    _nin:
+                      - db_write
+                      - notify
+        check:
+          _or:
+            - workflow:
+                organization:
+                  org_members:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                    role:
+                      _eq: owner
+            - _and:
+                - workflow:
+                    organization:
+                      org_members:
+                        user_id:
+                          _eq: X-Hasura-User-Id
+                        role:
+                          _eq: editor
+                - step_type:
+                    _nin:
+                      - db_write
+                      - notify
   delete_permissions:
     - role: user
       permission:
@@ -336,16 +367,43 @@
           - config
           - is_active
         filter:
-          workflow:
-            organization:
-              org_members:
-                user_id:
-                  _eq: X-Hasura-User-Id
-                role:
-                  _in:
-                    - owner
-                    - editor
-        check: null
+          _or:
+            - workflow:
+                organization:
+                  org_members:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                    role:
+                      _eq: owner
+            - _and:
+                - workflow:
+                    organization:
+                      org_members:
+                        user_id:
+                          _eq: X-Hasura-User-Id
+                        role:
+                          _eq: editor
+                - trigger_type:
+                    _neq: webhook
+        check:
+          _or:
+            - workflow:
+                organization:
+                  org_members:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                    role:
+                      _eq: owner
+            - _and:
+                - workflow:
+                    organization:
+                      org_members:
+                        user_id:
+                          _eq: X-Hasura-User-Id
+                        role:
+                          _eq: editor
+                - trigger_type:
+                    _neq: webhook
   delete_permissions:
     - role: user
       permission:
@@ -390,27 +448,6 @@
             org_members:
               user_id:
                 _eq: X-Hasura-User-Id
-  insert_permissions:
-    - role: user
-      permission:
-        columns:
-          - org_id
-          - workflow_id
-          - status
-          - triggered_by
-          - trigger_type
-          - started_at
-          - completed_at
-          - error
-        check:
-          organization:
-            org_members:
-              user_id:
-                _eq: X-Hasura-User-Id
-              role:
-                _in:
-                  - owner
-                  - editor
 
 - table:
     schema: public
@@ -436,48 +473,7 @@
                 org_members:
                   user_id:
                     _eq: X-Hasura-User-Id
-  insert_permissions:
-    - role: user
-      permission:
-        columns:
-          - workflow_run_id
-          - workflow_step_id
-          - status
-          - started_at
-          - input
-          - attempt_count
-        check:
-          workflow_run:
-            organization:
-              org_members:
-                user_id:
-                  _eq: X-Hasura-User-Id
-                role:
-                  _in:
-                    - owner
-                    - editor
-  update_permissions:
-    - role: user
-      permission:
-        columns:
-          - status
-          - started_at
-          - completed_at
-          - output
-          - error
-          - attempt_count
-          - approved_by
-          - approved_at
-        filter:
-          workflow_run:
-            organization:
-              org_members:
-                user_id:
-                  _eq: X-Hasura-User-Id
-                role:
-                  _in:
-                    - owner
-                    - editor
+
 
 - table:
     schema: public

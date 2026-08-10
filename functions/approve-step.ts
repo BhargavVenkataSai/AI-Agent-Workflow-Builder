@@ -107,11 +107,16 @@ export default async (req: Request, res: Response) => {
     const workflowRunId = stepRun.workflow_run_id;
     const nextStepOrder = stepRun.workflow_step.step_order + 1;
 
-    // Update step_run to approved
+    // Update step_run to approved atomically
     const approveStepMutation = `
       mutation ApproveStepRun($id: uuid!, $approvedBy: uuid!, $approvedAt: timestamptz!) {
-        update_step_runs_by_pk(
-          pk_columns: {id: $id},
+        update_step_runs(
+          where: {
+            id: {_eq: $id},
+            status: {_eq: awaiting_approval},
+            workflow_step: {step_type: {_eq: approval_gate}},
+            workflow_run: {status: {_eq: paused}}
+          },
           _set: {
             status: approved,
             approved_by: $approvedBy,
@@ -119,32 +124,37 @@ export default async (req: Request, res: Response) => {
             completed_at: $approvedAt
           }
         ) {
-          id
-          status
+          affected_rows
         }
       }
     `;
-    await mutateHasura(approveStepMutation, {
+    const approveResult = await mutateHasura(approveStepMutation, {
       id: step_run_id,
       approvedBy: userId,
       approvedAt: new Date().toISOString(),
     });
 
-    // Update workflow_run status back to running
+    if (!approveResult.update_step_runs || approveResult.update_step_runs.affected_rows === 0) {
+      return res.status(400).json({
+        message: 'Step approval failed: Step was already approved or is not awaiting approval',
+      });
+    }
+
+    // Update workflow_run status back to running atomically
     await mutateHasura(
       `
       mutation ResumeWorkflowRun($id: uuid!) {
-        update_workflow_runs_by_pk(
-          pk_columns: {id: $id},
+        update_workflow_runs(
+          where: {id: {_eq: $id}, status: {_eq: paused}},
           _set: {status: running}
         ) {
-          id
-          status
+          affected_rows
         }
       }
     `,
       { id: workflowRunId }
     );
+
 
     // Resume execution from the next step (fire-and-forget)
     console.log(`[approveStep] Approved step ${step_run_id}, resuming workflow ${workflowRunId} from step order ${nextStepOrder}`);

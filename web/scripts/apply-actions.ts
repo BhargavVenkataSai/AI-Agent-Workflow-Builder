@@ -24,9 +24,8 @@ async function applyActions() {
       name: 'triggerWorkflowRun',
       definition: {
         kind: 'synchronous',
-        handler: 'https://few-humans-walk.loca.lt/api/trigger-workflow-run',
+        handler: '{{NHOST_FUNCTIONS_URL}}/v1/trigger-workflow-run',
         forward_client_headers: true,
-        headers: [{ name: 'Bypass-Tunnel-Reminder', value: 'true' }],
         arguments: [{ name: 'workflow_id', type: 'uuid!' }],
         output_type: 'TriggerWorkflowRunOutput!'
       },
@@ -36,9 +35,8 @@ async function applyActions() {
       name: 'approveStep',
       definition: {
         kind: 'synchronous',
-        handler: 'https://few-humans-walk.loca.lt/api/approve-step',
+        handler: '{{NHOST_FUNCTIONS_URL}}/v1/approve-step',
         forward_client_headers: true,
-        headers: [{ name: 'Bypass-Tunnel-Reminder', value: 'true' }],
         arguments: [{ name: 'step_run_id', type: 'uuid!' }],
         output_type: 'ApproveStepOutput!'
       },
@@ -48,9 +46,8 @@ async function applyActions() {
       name: 'webhookTrigger',
       definition: {
         kind: 'synchronous',
-        handler: 'https://few-humans-walk.loca.lt/api/webhook-trigger',
+        handler: '{{NHOST_FUNCTIONS_URL}}/v1/webhook-trigger',
         forward_client_headers: true,
-        headers: [{ name: 'Bypass-Tunnel-Reminder', value: 'true' }],
         arguments: [
           { name: 'workflow_id', type: 'uuid!' },
           { name: 'payload', type: 'jsonb' }
@@ -59,6 +56,7 @@ async function applyActions() {
       },
       permissions: [{ role: 'user' }]
     }
+
   ];
 
   for (const action of actionsToCreate) {

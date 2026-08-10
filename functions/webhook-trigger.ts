@@ -72,17 +72,41 @@ export default async (req: Request, res: Response) => {
     // Validate webhook secret against trigger config
     const trigger = workflow.workflow_triggers[0];
     const expectedSecret = trigger.config?.secret;
-    if (expectedSecret && expectedSecret !== webhookSecret) {
+    if (!expectedSecret) {
+      return res.status(400).json({ message: 'Webhook trigger has no configured secret' });
+    }
+    if (!webhookSecret) {
+      return res.status(400).json({ message: 'Missing webhook secret header/payload' });
+    }
+    if (webhookSecret !== expectedSecret) {
       return res.status(400).json({ message: 'Invalid webhook secret' });
     }
 
-    // Check quota
-    const org = workflow.organization;
-    if (org.quota_used >= org.quota_limit) {
+    // Atomic quota reservation via Postgres function or database query
+    const quotaRes = await mutateHasura(
+      `
+      mutation ReserveWebhookQuota($orgId: uuid!) {
+        check_and_increment_quota(args: {p_org_id: $orgId})
+      }
+    `,
+      { orgId: workflow.org_id }
+    ).catch(async () => {
+      // Fallback if custom function is not yet tracked in Hasura metadata
+      const org = workflow.organization;
+      if (org.quota_used >= org.quota_limit) return { check_and_increment_quota: false };
+      await mutateHasura(
+        `mutation IncQuota($orgId: uuid!) { update_organizations_by_pk(pk_columns: {id: $orgId}, _inc: {quota_used: 1}) { id } }`,
+        { orgId: workflow.org_id }
+      );
+      return { check_and_increment_quota: true };
+    });
+
+    if (!quotaRes.check_and_increment_quota) {
       return res.status(400).json({
-        message: `Organization quota exceeded (${org.quota_used}/${org.quota_limit})`,
+        message: `Organization quota exceeded for org ${workflow.org_id}`,
       });
     }
+
 
     // Create workflow_run
     const createRunMutation = `
