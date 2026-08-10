@@ -2,8 +2,11 @@ actions:
   - name: triggerWorkflowRun
     definition:
       kind: synchronous
-      handler: 'https://<your-vercel-domain>.vercel.app/api/trigger-workflow-run'
+      handler: 'https://few-humans-walk.loca.lt/api/trigger-workflow-run'
       forward_client_headers: true
+      headers:
+        - name: Bypass-Tunnel-Reminder
+          value: 'true'
     permissions:
       - role: user
     comment: >
@@ -12,8 +15,11 @@ actions:
   - name: approveStep
     definition:
       kind: synchronous
-      handler: 'https://<your-vercel-domain>.vercel.app/api/approve-step'
+      handler: 'https://few-humans-walk.loca.lt/api/approve-step'
       forward_client_headers: true
+      headers:
+        - name: Bypass-Tunnel-Reminder
+          value: 'true'
     permissions:
       - role: user
     comment: >
@@ -22,8 +28,11 @@ actions:
   - name: webhookTrigger
     definition:
       kind: synchronous
-      handler: '{{NHOST_FUNCTIONS_URL}}/v1/webhook-trigger'
+      handler: 'https://few-humans-walk.loca.lt/api/webhook-trigger'
       forward_client_headers: true
+      headers:
+        - name: Bypass-Tunnel-Reminder
+          value: 'true'
     permissions:
       - role: user
     comment: Webhook endpoint to trigger a workflow run from external systems.
