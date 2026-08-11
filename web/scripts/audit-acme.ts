@@ -1,5 +1,5 @@
-const GQL_URL = 'https://diurddjlflgkyeeyylcp.hasura.ap-south-1.nhost.run/v1/graphql';
-const AUTH_URL = 'https://diurddjlflgkyeeyylcp.auth.ap-south-1.nhost.run/v1';
+const GQL_URL = 'https://soouvxhgygbxyeooczsu.hasura.ap-south-1.nhost.run/v1/graphql';
+const AUTH_URL = 'https://soouvxhgygbxyeooczsu.auth.ap-south-1.nhost.run/v1';
 
 async function runAcmeAudit() {
   console.log('=== AUDIT ACME USER: Bidirectional Isolation Verification ===\n');

@@ -12,7 +12,7 @@ async function testUsers() {
     let success = false;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const res = await fetch('https://diurddjlflgkyeeyylcp.auth.ap-south-1.nhost.run/v1/signin/email-password', {
+        const res = await fetch('https://soouvxhgygbxyeooczsu.auth.ap-south-1.nhost.run/v1/signin/email-password', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthenticationStatus, useUserData, useSignOut } from '@nhost/nextjs';
 import { useQuery } from '@apollo/client';
@@ -14,13 +14,27 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const orgDropdownRef = useRef<HTMLDivElement>(null);
+
   const { selectedOrgId, selectedOrgRole, setSelectedOrg } = useOrg();
 
   const { data: orgData, loading: orgsLoading } = useQuery(GET_USER_ORGS, {
     variables: { userId: user?.id },
     skip: !user?.id,
   });
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (orgDropdownRef.current && !orgDropdownRef.current.contains(event.target as Node)) {
+        setOrgDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -122,50 +136,220 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* Org Selector Card */}
-          <div style={{ position: 'relative', width: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem 0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '0.625rem', pointerEvents: 'none' }}>
-              <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
+          {/* Org Selector Card & Custom Dropdown */}
+          <div ref={orgDropdownRef} style={{ position: 'relative', width: '100%' }}>
+            <button
+              type="button"
+              onClick={() => setOrgDropdownOpen((prev) => !prev)}
+              disabled={orgsLoading || !orgData?.org_members?.length}
+              aria-expanded={orgDropdownOpen}
+              aria-label="Select organization"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                padding: '0.625rem 0.75rem',
+                backgroundColor: orgDropdownOpen ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                border: orgDropdownOpen ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '0.625rem',
+                cursor: orgsLoading ? 'wait' : 'pointer',
+                transition: 'all 0.2s ease',
+                color: '#ffffff',
+                textAlign: 'left',
+                outline: 'none',
+                boxShadow: orgDropdownOpen ? '0 0 12px rgba(59, 130, 246, 0.2)' : 'none'
+              }}
+              onMouseOver={(e) => {
+                if (!orgDropdownOpen && !orgsLoading) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!orgDropdownOpen) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                }
+              }}
+            >
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '6px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                flexShrink: 0,
+                boxShadow: '0 2px 6px rgba(59, 130, 246, 0.3)'
+              }}>
                 {currentOrg?.name?.[0]?.toUpperCase() || 'O'}
               </div>
+
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {currentOrg?.name || (orgsLoading ? 'Loading org...' : 'Default Organization')}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{formattedRole}</div>
+                <div style={{ fontSize: '0.7rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span>{formattedRole}</span>
+                </div>
               </div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </div>
-            
-            <select 
-              value={selectedOrgId || ''}
-              onChange={(e) => {
-                const member = orgData?.org_members?.find((m: any) => m.organization.id === e.target.value);
-                if (member) setSelectedOrg(member.organization.id, member.role);
-              }}
-              disabled={orgsLoading || !orgData?.org_members?.length}
-              aria-label="Select organization"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                opacity: 0,
-                cursor: 'pointer'
-              }}
-            >
-              {orgsLoading ? (
-                <option value="">Loading organizations...</option>
-              ) : orgData?.org_members?.length > 0 ? (
-                orgData.org_members.map((member: any) => (
-                  <option key={member.organization.id} value={member.organization.id} style={{ background: '#111827', color: '#ffffff' }}>
-                    {member.organization.name} ({member.role})
-                  </option>
-                ))
-              ) : (
-                <option value="">Default Organization</option>
-              )}
-            </select>
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transform: orgDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease'
+                }}
+              >
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+
+            {/* Custom Popover Dropdown Menu */}
+            {orgDropdownOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#161e2e',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '0.75rem',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
+                  backdropFilter: 'blur(16px)',
+                  zIndex: 100,
+                  padding: '0.5rem',
+                  animation: 'slideUp 0.15s ease-out'
+                }}
+              >
+                <div style={{ padding: '0.375rem 0.5rem 0.5rem', fontSize: '0.65rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Organizations ({orgData?.org_members?.length || 1})
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '200px', overflowY: 'auto' }}>
+                  {orgsLoading ? (
+                    <div style={{ padding: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af', textAlign: 'center' }}>Loading organizations...</div>
+                  ) : orgData?.org_members?.length > 0 ? (
+                    orgData.org_members.map((member: any) => {
+                      const isSelected = member.organization.id === currentOrg?.id;
+                      const memberRole = member.role ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member';
+                      return (
+                        <button
+                          key={member.organization.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedOrg(member.organization.id, member.role);
+                            setOrgDropdownOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.625rem',
+                            padding: '0.5rem 0.625rem',
+                            borderRadius: '0.5rem',
+                            backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                            border: isSelected ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseOver={(e) => {
+                            if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                          }}
+                          onMouseOut={(e) => {
+                            if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            backgroundColor: isSelected ? '#3b82f6' : '#374151',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            flexShrink: 0
+                          }}>
+                            {member.organization.name?.[0]?.toUpperCase() || 'O'}
+                          </div>
+
+                          <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {member.organization.name}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: isSelected ? '#60a5fa' : '#9ca3af' }}>
+                              {memberRole}
+                            </div>
+                          </div>
+
+                          {isSelected && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          )}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: '0.5rem 0.625rem', fontSize: '0.8125rem', color: '#ffffff' }}>
+                      Default Organization (Owner)
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ margin: '0.375rem 0', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }} />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrgDropdownOpen(false);
+                    alert(`Managing Organizations for ${currentOrg?.name || 'Acme AI Labs'}\nRole: ${formattedRole}`);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.625rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: '#9ca3af',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.color = '#9ca3af';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>Manage Organizations</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
         

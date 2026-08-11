@@ -31,7 +31,7 @@ function record(
 }
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
-const NHOST_URL = process.env.NHOST_GRAPHQL_URL || 'https://diurddjlflgkyeeyylcp.hasura.ap-south-1.nhost.run/v1/graphql';
+const NHOST_URL = process.env.NHOST_GRAPHQL_URL || 'https://soouvxhgygbxyeooczsu.hasura.ap-south-1.nhost.run/v1/graphql';
 const ADMIN_SECRET = process.env.NHOST_ADMIN_SECRET || '';
 
 // Test user session IDs (if live environment available)

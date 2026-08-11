@@ -1,4 +1,4 @@
-const GQL_METADATA_URL = 'https://diurddjlflgkyeeyylcp.hasura.ap-south-1.nhost.run/v1/metadata';
+const GQL_METADATA_URL = 'https://soouvxhgygbxyeooczsu.hasura.ap-south-1.nhost.run/v1/metadata';
 const ADMIN_SECRET = process.env.NHOST_ADMIN_SECRET || '4kenw@3EsAvX&&!6QRL:nuYO5r%Z)5fV';
 
 async function fetchActionsMetadata() {

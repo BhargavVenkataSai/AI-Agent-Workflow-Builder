@@ -8,8 +8,8 @@
  *  4. End-to-end workflow execution: llm_call → conditional_branch → http_request → approval_gate → approve → notify → completion
  */
 
-const AUTH_URL = 'https://diurddjlflgkyeeyylcp.auth.ap-south-1.nhost.run/v1';
-const GQL_URL = 'https://diurddjlflgkyeeyylcp.hasura.ap-south-1.nhost.run/v1/graphql';
+const AUTH_URL = 'https://soouvxhgygbxyeooczsu.auth.ap-south-1.nhost.run/v1';
+const GQL_URL = 'https://soouvxhgygbxyeooczsu.hasura.ap-south-1.nhost.run/v1/graphql';
 const ADMIN_SECRET = process.env.NHOST_ADMIN_SECRET || '4kenw@3EsAvX&&!6QRL:nuYO5r%Z)5fV';
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 

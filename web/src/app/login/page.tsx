@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSignInEmailPassword, useSignUpEmailPassword, useAuthenticationStatus, useSignOut } from '@nhost/nextjs';
 
@@ -17,6 +17,13 @@ export default function Login() {
 
   const { signInEmailPassword, isLoading: isSignInLoading } = useSignInEmailPassword();
   const { signUpEmailPassword, isLoading: isSignUpLoading } = useSignUpEmailPassword();
+
+  // Automatically redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,33 +167,7 @@ export default function Login() {
           {isLogin ? 'Enter your credentials to access your account' : 'Sign up to start building automated workflows'}
         </p>
 
-        {/* Logged in state info banner */}
-        {isAuthenticated && !notification && (
-          <div 
-            style={{
-              padding: '0.875rem 1rem',
-              borderRadius: '0.75rem',
-              marginBottom: '1.5rem',
-              fontSize: '0.875rem',
-              backgroundColor: 'rgba(59, 130, 246, 0.12)',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
-              color: '#60a5fa',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}
-          >
-            <span>You are currently signed in.</span>
-            <button 
-              type="button"
-              onClick={() => router.push('/dashboard')}
-              style={{ background: 'none', border: 'none', color: '#60a5fa', textDecoration: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-            >
-              Dashboard <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </button>
-          </div>
-        )}
-        
+
         {/* Notification Banner */}
         {notification && (
           <div 

@@ -1,6 +1,6 @@
 async function checkAuth() {
-  const url1 = 'https://diurddjlflgkyeeyylcp.auth.ap-south-1.nhost.run/v1/signin/email-password';
-  const url2 = 'https://diurddjlflgkyeeyylcp.nhost.run/v1/auth/signin/email-password';
+  const url1 = 'https://soouvxhgygbxyeooczsu.auth.ap-south-1.nhost.run/v1/signin/email-password';
+  const url2 = 'https://soouvxhgygbxyeooczsu.nhost.run/v1/auth/signin/email-password';
   
   const body = JSON.stringify({ email: 'owner_a@test.com', password: 'Test1234!' });
 

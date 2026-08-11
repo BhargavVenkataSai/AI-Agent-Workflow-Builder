@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 
-const HASURA_URL = process.env.NHOST_GRAPHQL_URL || 'https://diurddjlflgkyeeyylcp.hasura.ap-south-1.nhost.run/v1/graphql';
+const HASURA_URL = process.env.NHOST_GRAPHQL_URL || 'https://soouvxhgygbxyeooczsu.hasura.ap-south-1.nhost.run/v1/graphql';
 const ADMIN_SECRET = process.env.NHOST_ADMIN_SECRET || '4kenw@3EsAvX&&!6QRL:nuYO5r%Z)5fV';
 
 // Acme AI Labs owner
