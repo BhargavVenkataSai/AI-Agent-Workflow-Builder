@@ -112,7 +112,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <aside 
         className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
-          width: sidebarCollapsed ? '76px' : '280px',
+          width: sidebarCollapsed ? '72px' : '280px',
           backgroundColor: '#111827',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
@@ -122,50 +122,78 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           top: 0,
           zIndex: 50,
           flexShrink: 0,
-          transition: 'width 0.3s ease, transform 0.3s ease'
+          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease'
         }}
       >
-        {/* Brand Header & Organization Switcher */}
-        <div style={{ padding: sidebarCollapsed ? '1rem 0.625rem' : '1.25rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', gap: '0.5rem', marginBottom: sidebarCollapsed ? '0.75rem' : '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)', flexShrink: 0 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              </div>
-              {!sidebarCollapsed && (
-                <div style={{ overflow: 'hidden' }}>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>Workflow App</div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>Automation Platform</div>
-                </div>
-              )}
-            </div>
+        {/* Floating Linear-Style Sidebar Boundary Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? "Expand sidebar (Ctrl+\\)" : "Collapse sidebar (Ctrl+\\)"}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          style={{
+            position: 'absolute',
+            right: '-12px',
+            top: '24px',
+            width: '24px',
+            height: '24px',
+            borderRadius: '50%',
+            backgroundColor: '#1f2937',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: '#9ca3af',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 60,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+            transition: 'all 0.2s ease',
+            outline: 'none'
+          }}
+          onMouseOver={(e) => { 
+            e.currentTarget.style.color = '#ffffff'; 
+            e.currentTarget.style.backgroundColor = '#3b82f6';
+            e.currentTarget.style.borderColor = '#60a5fa';
+            e.currentTarget.style.transform = 'scale(1.15)';
+          }}
+          onMouseOut={(e) => { 
+            e.currentTarget.style.color = '#9ca3af'; 
+            e.currentTarget.style.backgroundColor = '#1f2937';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="12" 
+            height="12" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            style={{ 
+              transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', 
+              transition: 'transform 0.3s ease' 
+            }}
+          >
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
 
-            {/* Sidebar Collapse Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '8px',
-                color: '#9ca3af',
-                padding: '0.4rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease',
-                flexShrink: 0
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>
-                <polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/>
-              </svg>
-            </button>
+        {/* Brand Header & Organization Switcher */}
+        <div style={{ padding: sidebarCollapsed ? '1.25rem 0.5rem' : '1.25rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)', flexShrink: 0, margin: sidebarCollapsed ? '0 auto' : '0' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            {!sidebarCollapsed && (
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>Workflow App</div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>Automation Platform</div>
+              </div>
+            )}
           </div>
 
           {/* Org Selector Card & Custom Dropdown */}
@@ -183,7 +211,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 alignItems: 'center',
                 justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                 gap: '0.625rem',
-                padding: sidebarCollapsed ? '0.625rem 0.5rem' : '0.625rem 0.75rem',
+                padding: sidebarCollapsed ? '0.5rem' : '0.625rem 0.75rem',
                 backgroundColor: orgDropdownOpen ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)',
                 border: orgDropdownOpen ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '0.625rem',
@@ -219,7 +247,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 flexShrink: 0,
-                boxShadow: '0 2px 6px rgba(59, 130, 246, 0.3)'
+                boxShadow: '0 2px 6px rgba(59, 130, 246, 0.3)',
+                margin: sidebarCollapsed ? '0 auto' : '0'
               }}>
                 {currentOrg?.name?.[0]?.toUpperCase() || 'O'}
               </div>
@@ -264,8 +293,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 style={{
                   position: 'absolute',
                   top: 'calc(100% + 6px)',
-                  left: 0,
-                  right: 0,
+                  left: sidebarCollapsed ? '100%' : 0,
+                  marginLeft: sidebarCollapsed ? '8px' : 0,
+                  right: sidebarCollapsed ? 'auto' : 0,
+                  width: sidebarCollapsed ? '220px' : 'auto',
                   backgroundColor: '#161e2e',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '0.75rem',
@@ -394,7 +425,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
         
         {/* Navigation Items */}
-        <nav style={{ flex: 1, padding: sidebarCollapsed ? '1rem 0.5rem' : '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: sidebarCollapsed ? '1rem 0.5rem' : '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.375rem', overflowY: 'auto' }}>
           <Link 
             href="/dashboard" 
             title={sidebarCollapsed ? "Dashboard" : undefined}
@@ -403,13 +434,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               alignItems: 'center',
               justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
               gap: '0.75rem',
-              padding: sidebarCollapsed ? '0.625rem 0.5rem' : '0.625rem 0.875rem',
+              padding: sidebarCollapsed ? '0.625rem' : '0.625rem 0.875rem',
               borderRadius: '0.5rem',
               fontSize: '0.875rem',
               fontWeight: 500,
               color: pathname === '/dashboard' ? '#ffffff' : '#9ca3af',
               backgroundColor: pathname === '/dashboard' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-              borderLeft: pathname === '/dashboard' ? '3px solid #3b82f6' : '3px solid transparent',
+              borderLeft: sidebarCollapsed ? 'none' : (pathname === '/dashboard' ? '3px solid #3b82f6' : '3px solid transparent'),
+              boxShadow: sidebarCollapsed && pathname === '/dashboard' ? '0 0 10px rgba(59, 130, 246, 0.3)' : 'none',
               transition: 'all 0.15s ease'
             }}
           >
@@ -425,13 +457,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               alignItems: 'center',
               justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
               gap: '0.75rem',
-              padding: sidebarCollapsed ? '0.625rem 0.5rem' : '0.625rem 0.875rem',
+              padding: sidebarCollapsed ? '0.625rem' : '0.625rem 0.875rem',
               borderRadius: '0.5rem',
               fontSize: '0.875rem',
               fontWeight: 500,
               color: pathname.includes('/workflows') ? '#ffffff' : '#9ca3af',
               backgroundColor: pathname.includes('/workflows') ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-              borderLeft: pathname.includes('/workflows') ? '3px solid #3b82f6' : '3px solid transparent',
+              borderLeft: sidebarCollapsed ? 'none' : (pathname.includes('/workflows') ? '3px solid #3b82f6' : '3px solid transparent'),
+              boxShadow: sidebarCollapsed && pathname.includes('/workflows') ? '0 0 10px rgba(59, 130, 246, 0.3)' : 'none',
               transition: 'all 0.15s ease'
             }}
           >
@@ -455,7 +488,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 alignItems: 'center',
                 justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                 gap: '0.75rem',
-                padding: sidebarCollapsed ? '0.625rem 0.5rem' : '0.625rem 0.875rem',
+                padding: sidebarCollapsed ? '0.625rem' : '0.625rem 0.875rem',
                 borderRadius: '0.5rem',
                 fontSize: '0.875rem',
                 fontWeight: 500,
@@ -473,9 +506,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* User Profile Footer */}
-        <div style={{ padding: sidebarCollapsed ? '1rem 0.5rem' : '1rem 1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ padding: sidebarCollapsed ? '0.875rem 0.5rem' : '1rem 1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '0.75rem', marginBottom: sidebarCollapsed ? '0.5rem' : '0.875rem' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }} title={sidebarCollapsed ? `${displayName} (${user?.email})` : undefined}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0, margin: sidebarCollapsed ? '0 auto' : '0' }} title={sidebarCollapsed ? `${displayName} (${user?.email})` : undefined}>
               {displayName[0]?.toUpperCase() || 'U'}
             </div>
             {!sidebarCollapsed && (
