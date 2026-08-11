@@ -454,10 +454,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fire-and-forget async execution
-    executeWorkflow(workflowRunId).catch((err) =>
-      console.error(`[triggerWorkflowRun] Async error for ${workflowRunId}:`, err)
-    );
+    // On Vercel Serverless, we cannot fire-and-forget because the lambda freezes.
+    // We must await the execution so it processes the workflow steps.
+    try {
+      await executeWorkflow(workflowRunId);
+    } catch (err) {
+      console.error(`[triggerWorkflowRun] Async error for ${workflowRunId}:`, err);
+    }
 
     console.log(
       `[triggerWorkflowRun] Started run ${workflowRunId} for workflow ${workflow_id} by user ${userId}`

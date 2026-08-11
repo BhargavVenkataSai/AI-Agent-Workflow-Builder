@@ -335,10 +335,13 @@ export async function POST(req: NextRequest) {
       { id: workflowRunId }
     );
 
-    // Fire-and-forget: resume from next step
-    executeWorkflow(workflowRunId, nextStepOrder).catch((err) =>
-      console.error(`[approveStep] Resume error:`, err)
-    );
+    // On Vercel Serverless, we cannot fire-and-forget because the lambda freezes.
+    // We must await the execution so it processes the workflow steps.
+    try {
+      await executeWorkflow(workflowRunId, nextStepOrder);
+    } catch (err) {
+      console.error(`[approveStep] Resume error:`, err);
+    }
 
     return NextResponse.json({
       success: true,
