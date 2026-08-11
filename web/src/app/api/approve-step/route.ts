@@ -25,6 +25,34 @@ async function gql(query: string, variables: Record<string, any> = {}) {
   return data.data;
 }
 
+// ─── Helper: Derive authenticated user strictly from server context ──────
+function getAuthenticatedUserId(req: NextRequest, body: any): string | null {
+  if (body?.session_variables?.['x-hasura-user-id']) {
+    return body.session_variables['x-hasura-user-id'];
+  }
+  const authHeader = req.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+        const payload = JSON.parse(payloadJson);
+        const hasuraClaims = payload['https://hasura.io/jwt/claims'];
+        if (hasuraClaims && hasuraClaims['x-hasura-user-id']) {
+          return hasuraClaims['x-hasura-user-id'];
+        }
+        if (payload.sub) {
+          return payload.sub;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse JWT token in header:', e);
+    }
+  }
+  return null;
+}
+
 // ─── Template helpers ──────────────────────────────────────────────
 function applyTemplate(template: string, input: any): string {
   if (!template) return template;
@@ -268,13 +296,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Support both direct API call and Hasura Action forwarded call
     const step_run_id = body.input?.step_run_id || body.stepRunId;
-    const sessionVars = body.session_variables;
-    const userId = sessionVars?.['x-hasura-user-id'] || body.userId;
+    
+    // SECURITY: Strictly derive user ID from session context or Bearer token
+    const userId = getAuthenticatedUserId(req, body);
 
     if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: No user ID' }, { status: 400 });
+      return NextResponse.json({ message: 'Unauthorized: No valid session or authorization token' }, { status: 401 });
     }
     if (!step_run_id) {
       return NextResponse.json({ message: 'Missing step_run_id' }, { status: 400 });

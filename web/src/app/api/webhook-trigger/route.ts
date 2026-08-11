@@ -39,7 +39,7 @@ function applyTemplate(template: string, input: any): string {
   return result;
 }
 
-// ─── Step executors (inline to avoid cross-package imports) ────────
+// ─── Step executors ───────────────────────────────────────────────
 async function executeLlmCall(
   config: any,
   input: any,
@@ -197,7 +197,7 @@ async function executeConditionalBranch(
   }
 }
 
-// ─── Workflow engine (self-contained) ──────────────────────────────
+// ─── Workflow engine (reused) ──────────────────────────────────────
 async function updateStepRun(
   id: string,
   status: string,
@@ -247,7 +247,7 @@ async function updateRunStatus(id: string, status: string) {
   await gql(mutation, vars);
 }
 
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function executeWorkflow(workflowRunId: string, startFrom = 0, initialPayload: any = null) {
   try {
@@ -356,75 +356,89 @@ async function executeWorkflow(workflowRunId: string, startFrom = 0, initialPayl
   }
 }
 
-// ─── Route handler ─────────────────────────────────────────────────
+// ─── Route handler for Webhook Hasura Action & external callers ────────
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Support both direct API call and Hasura Action forwarded call
+    // 1. Resolve workflow_id and payload
     const workflow_id = body.input?.workflow_id || body.workflow_id;
     const payload = body.input?.payload || body.payload || {};
-    const sessionVars = body.session_variables;
-    // From Hasura Action forward OR from direct frontend call
-    const userId = sessionVars?.['x-hasura-user-id'] || body.userId;
 
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: No user ID' }, { status: 400 });
-    }
+    // 2. Extract webhook secret from Hasura input, body, query param, or headers
+    const authHeader = req.headers.get('authorization');
+    const secret =
+      body.input?.secret ||
+      body.secret ||
+      body.input?.payload?.secret ||
+      body.payload?.secret ||
+      req.nextUrl?.searchParams?.get('secret') ||
+      req.headers.get('x-webhook-secret') ||
+      req.headers.get('x-secret') ||
+      (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null);
+
     if (!workflow_id) {
       return NextResponse.json({ message: 'Missing workflow_id' }, { status: 400 });
     }
+    if (!secret) {
+      return NextResponse.json({ message: 'Unauthorized: Missing webhook secret' }, { status: 401 });
+    }
 
-    // Fetch workflow with org membership and quota
+    // 3. Resolve workflow, active triggers, and organization directly from DB
     const workflowData = await gql(
-      `query GetWF($wfId: uuid!, $uid: uuid!) {
+      `query GetWFForWebhook($wfId: uuid!) {
         workflows_by_pk(id: $wfId) {
           id org_id is_active
           organization {
             id name quota_used quota_limit
-            org_members(where: {user_id: {_eq: $uid}}) { id role }
+          }
+          workflow_triggers(where: {trigger_type: {_eq: "webhook"}, is_active: {_eq: true}}) {
+            id trigger_type config is_active
           }
           workflow_steps(order_by: {step_order: asc}) { id step_order step_type name }
         }
       }`,
-      { wfId: workflow_id, uid: userId }
+      { wfId: workflow_id }
     );
     const workflow = workflowData.workflows_by_pk;
-    if (!workflow) return NextResponse.json({ message: 'Workflow not found' }, { status: 400 });
-    if (!workflow.is_active)
+    if (!workflow) {
+      return NextResponse.json({ message: 'Workflow not found' }, { status: 400 });
+    }
+    if (!workflow.is_active) {
       return NextResponse.json({ message: 'Workflow is not active' }, { status: 400 });
+    }
 
+    // 4. Validate webhook trigger configuration & secret
+    const webhookTrigger = workflow.workflow_triggers?.[0];
+    if (!webhookTrigger) {
+      return NextResponse.json({ message: 'Workflow is not configured for webhook triggers' }, { status: 400 });
+    }
+
+    const expectedSecret = webhookTrigger.config?.secret || webhookTrigger.config?.webhook_secret;
+    if (!expectedSecret || secret !== expectedSecret) {
+      return NextResponse.json({ message: 'Unauthorized: Invalid webhook secret' }, { status: 401 });
+    }
+
+    // 5. Resolve organization & perform atomic quota reservation
     const org = workflow.organization;
-    const membership = org.org_members?.[0];
-    if (!membership)
-      return NextResponse.json(
-        { message: 'Forbidden: You are not a member of this organization' },
-        { status: 400 }
-      );
-    if (membership.role !== 'owner' && membership.role !== 'editor')
-      return NextResponse.json(
-        { message: 'Forbidden: Viewers cannot trigger workflow runs' },
-        { status: 400 }
-      );
-
-    // Atomic quota reservation
     const quotaRes = await gql(
-      `mutation ReserveTriggerQuota($orgId: uuid!) {
+      `mutation ReserveWebhookQuota($orgId: uuid!) {
         check_and_increment_quota(args: {p_org_id: $orgId}) {
           id
         }
       }`,
       { orgId: workflow.org_id }
     );
-    if (!quotaRes?.check_and_increment_quota?.length)
+    if (!quotaRes?.check_and_increment_quota?.length) {
       return NextResponse.json(
         { message: `Organization quota exceeded (${org.quota_used}/${org.quota_limit})` },
         { status: 400 }
       );
+    }
 
-    // Create workflow_run
+    // 6. Create workflow_run (triggered_by is NULL because it's an external secret authentication)
     const runResult = await gql(
-      `mutation CreateRun($o: workflow_runs_insert_input!) {
+      `mutation CreateWebhookRun($o: workflow_runs_insert_input!) {
         insert_workflow_runs_one(object: $o) { id status }
       }`,
       {
@@ -433,14 +447,14 @@ export async function POST(req: NextRequest) {
           workflow_id,
           status: 'running',
           trigger_type: 'webhook',
-          triggered_by: userId,
+          triggered_by: null,
           started_at: new Date().toISOString(),
         },
       }
     );
     const workflowRunId = runResult.insert_workflow_runs_one.id;
 
-    // Create step_runs
+    // 7. Create step_runs
     if (workflow.workflow_steps.length > 0) {
       const objs = workflow.workflow_steps.map((s: any) => ({
         workflow_run_id: workflowRunId,
@@ -448,20 +462,22 @@ export async function POST(req: NextRequest) {
         status: 'pending',
       }));
       await gql(
-        `mutation CreateSRs($objs: [step_runs_insert_input!]!) {
+        `mutation CreateWebhookSRs($objs: [step_runs_insert_input!]!) {
           insert_step_runs(objects: $objs) { affected_rows }
         }`,
         { objs }
       );
     }
 
-    // Fire-and-forget async execution
-    executeWorkflow(workflowRunId, 0, payload).catch((err) =>
-      console.error(`[webhookTrigger] Async error for ${workflowRunId}:`, err)
-    );
+    // 8. Invoke the SAME executeWorkflow engine
+    try {
+      await executeWorkflow(workflowRunId, 0, payload);
+    } catch (err) {
+      console.error(`[webhookTrigger] Async error for ${workflowRunId}:`, err);
+    }
 
     console.log(
-      `[webhookTrigger] Started run ${workflowRunId} for workflow ${workflow_id} by user ${userId} with payload`, payload
+      `[webhookTrigger] Webhook triggered run ${workflowRunId} for workflow ${workflow_id} in org ${org.name}`
     );
 
     return NextResponse.json({

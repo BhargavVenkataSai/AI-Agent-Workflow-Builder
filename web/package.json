@@ -13,6 +13,7 @@
     "@nhost/nextjs": "^2.3.1",
     "@nhost/react": "^3.11.2",
     "@nhost/react-apollo": "^18.0.2",
+    "@xyflow/react": "^12.11.2",
     "graphql": "^16.14.2",
     "js-yaml": "^5.2.3",
     "next": "^15.5.23",

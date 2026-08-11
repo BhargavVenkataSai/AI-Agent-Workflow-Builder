@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
 import { useUserData } from '@nhost/nextjs';
+import { nhost } from '@/lib/nhost';
 import { GET_WORKFLOW_DETAIL, UPDATE_WORKFLOW, GET_USER_ORGS } from '@/lib/graphql';
 import { useOrg } from '@/components/OrgContext';
 import { StepTypeIcon } from '@/components/StepTypeIcon';
@@ -214,10 +215,14 @@ export default function WorkflowDetail() {
 
     setIsTriggering(true);
     try {
+      const token = nhost.auth.getAccessToken();
       const res = await fetch('/api/trigger-workflow-run', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflow_id: id, userId: user?.id }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ workflow_id: id }),
       });
       const data = await res.json();
       if (!res.ok) {

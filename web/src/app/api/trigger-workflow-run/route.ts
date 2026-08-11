@@ -25,6 +25,36 @@ async function gql(query: string, variables: Record<string, any> = {}) {
   return data.data;
 }
 
+// ─── Helper: Derive authenticated user strictly from server context ──────
+function getAuthenticatedUserId(req: NextRequest, body: any): string | null {
+  // 1. Hasura Action session_variables (set by Hasura server after verifying JWT)
+  if (body?.session_variables?.['x-hasura-user-id']) {
+    return body.session_variables['x-hasura-user-id'];
+  }
+  // 2. Authorization header JWT (passed directly by authenticated client)
+  const authHeader = req.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+        const payload = JSON.parse(payloadJson);
+        const hasuraClaims = payload['https://hasura.io/jwt/claims'];
+        if (hasuraClaims && hasuraClaims['x-hasura-user-id']) {
+          return hasuraClaims['x-hasura-user-id'];
+        }
+        if (payload.sub) {
+          return payload.sub;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse JWT token in header:', e);
+    }
+  }
+  return null;
+}
+
 // ─── Template helpers ──────────────────────────────────────────────
 function applyTemplate(template: string, input: any): string {
   if (!template) return template;
@@ -361,14 +391,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Support both direct API call and Hasura Action forwarded call
     const workflow_id = body.input?.workflow_id || body.workflow_id;
-    const sessionVars = body.session_variables;
-    // From Hasura Action forward OR from direct frontend call
-    const userId = sessionVars?.['x-hasura-user-id'] || body.userId;
+    
+    // SECURITY: Must derive authenticated user ONLY from Hasura session_variables or valid Bearer JWT.
+    // DO NOT trust userId, org_id, or role passed in client request JSON.
+    const userId = getAuthenticatedUserId(req, body);
 
     if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: No user ID' }, { status: 400 });
+      return NextResponse.json({ message: 'Unauthorized: No valid session or authorization token' }, { status: 401 });
     }
     if (!workflow_id) {
       return NextResponse.json({ message: 'Missing workflow_id' }, { status: 400 });
@@ -454,8 +484,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // On Vercel Serverless, we cannot fire-and-forget because the lambda freezes.
-    // We must await the execution so it processes the workflow steps.
+    // Await execution so Vercel Serverless environment does not freeze mid-execution
     try {
       await executeWorkflow(workflowRunId);
     } catch (err) {

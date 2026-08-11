@@ -26,6 +26,7 @@ actions:
       forward_client_headers: true
     permissions:
       - role: user
+      - role: anonymous
     comment: Webhook endpoint to trigger a workflow run from external systems.
 
 custom_types:
