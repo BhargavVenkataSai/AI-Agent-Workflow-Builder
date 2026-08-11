@@ -4,6 +4,10 @@ version = 'v2.44.0-ce'
 adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'
 webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
 
+[[hasura.jwtSecrets]]
+key = '{{ secrets.NHOST_JWT_SECRET }}'
+type = 'HS256'
+
 [hasura.settings]
 corsDomain = ['*']
 devMode = false
