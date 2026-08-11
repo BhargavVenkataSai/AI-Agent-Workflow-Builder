@@ -6,7 +6,7 @@ webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
 
 [hasura.settings]
 corsDomain = ['*']
-devMode = false
+devMode = true
 enableAllowList = false
 enableConsole = true
 enableRemoteSchemaPermissions = false
@@ -23,7 +23,7 @@ emailVerificationRequired = false
 hibpEnabled = false
 
 [auth.method.anonymous]
-enabled = false
+enabled = true
 
 
 [auth.redirections]
