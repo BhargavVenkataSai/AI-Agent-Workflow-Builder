@@ -1,4 +1,3 @@
-
 [hasura]
 version = 'v2.44.0-ce'
 adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'
@@ -6,25 +5,27 @@ webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
 
 [hasura.settings]
 corsDomain = ['*']
-devMode = true
+devMode = false
 enableAllowList = false
 enableConsole = true
 enableRemoteSchemaPermissions = false
 enabledAPIs = ['metadata', 'graphql', 'pgdump', 'config']
 
 [functions]
+
 [functions.node]
 version = 20
 
 [auth]
+
 [auth.method]
+
 [auth.method.emailPassword]
 emailVerificationRequired = false
 hibpEnabled = false
 
 [auth.method.anonymous]
-enabled = true
-
+enabled = false
 
 [auth.redirections]
 clientUrl = 'http://localhost:3000'

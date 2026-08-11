@@ -30,12 +30,6 @@ git clone <repository-url>
 cd <project-root>
 ```
 
-### 2. Set Up nhost
-```bash
-npm install -g nhost    # if not already installed
-nhost up                # starts Postgres, Hasura, Auth, Functions
-```
-
 ### 3. Configure Environment
 Add your API key to `nhost/.secrets`:
 ```ini
