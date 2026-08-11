@@ -1,7 +1,6 @@
 'use client';
 import { useUserData } from '@nhost/nextjs';
 import { useQuery } from '@apollo/client';
-import { useEffect } from 'react';
 import { useOrg } from '@/components/OrgContext';
 import { GET_DASHBOARD_METRICS, GET_ORG_WORKFLOWS, GET_USER_ORGS } from '@/lib/graphql';
 import { UsageIndicator } from '@/components/UsageIndicator';
@@ -41,65 +40,12 @@ export default function DashboardHome() {
   const quotaLimit = org?.quota_limit ?? 100;
   const usagePercentage = quotaLimit > 0 ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
 
-  useEffect(() => {
-    if (user?.id) {
-      console.log('--- DIAGNOSTICS: Nhost User ---');
-      console.log('1. User ID:', user.id);
-      console.log('2. User Email:', user.email);
-    }
-  }, [user]);
 
-  useEffect(() => {
-    if (userOrgsData) {
-      console.log('--- DIAGNOSTICS: GraphQL Response (GET_USER_ORGS) ---');
-      console.log('3. Exact Result:', userOrgsData);
-      const members = userOrgsData.org_members?.map((m: any) => ({
-        org_id: m.organization.id,
-        org_name: m.organization.name,
-        org_slug: m.organization.slug,
-        role: m.role,
-      }));
-      console.table(members);
-    }
-  }, [userOrgsData]);
-
-  useEffect(() => {
-    console.log('--- DIAGNOSTICS: State & Resolved Values ---');
-    console.log('5. selectedOrgId from OrgContext:', selectedOrgId);
-    console.log('6. selected organization resolved:', org);
-    console.log('7. resolved role:', currentRole);
-  }, [selectedOrgId, org, currentRole]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* DEVELOPMENT ONLY DIAGNOSTICS PANEL */}
-      <div style={{ padding: '1rem', background: '#450a0a', border: '1px solid #dc2626', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-        <h2 style={{ color: '#fca5a5', margin: '0 0 1rem 0' }}>DEVELOPMENT ONLY DIAGNOSTICS</h2>
-        <div style={{ color: '#fecaca', fontSize: '0.875rem' }}>
-          <p><strong>1. User ID:</strong> {user?.id || 'null'}</p>
-          <p><strong>2. User Email:</strong> {user?.email || 'null'}</p>
-          <p><strong>3. Exact Result of GET_USER_ORGS:</strong></p>
-          <pre style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '0.25rem', overflowX: 'auto', maxHeight: '200px' }}>
-            {JSON.stringify(userOrgsData, null, 2)}
-          </pre>
-          <p><strong>4. Org Members:</strong></p>
-          <pre style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '0.25rem', overflowX: 'auto', maxHeight: '200px' }}>
-            {JSON.stringify(userOrgsData?.org_members?.map((m: any) => ({
-              org_id: m.organization.id,
-              org_name: m.organization.name,
-              org_slug: m.organization.slug,
-              role: m.role,
-            })), null, 2)}
-          </pre>
-          <p><strong>5. selectedOrgId (OrgContext):</strong> {selectedOrgId || 'null'}</p>
-          <p><strong>6. Resolved Organization:</strong></p>
-          <pre style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '0.25rem', overflowX: 'auto', maxHeight: '200px' }}>
-            {JSON.stringify(org, null, 2)}
-          </pre>
-          <p><strong>7. Resolved Role:</strong> {currentRole || 'null'}</p>
-        </div>
-      </div>
+
       {/* Metrics Cards Grid (4 Columns) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
         
