@@ -3,8 +3,10 @@ ALTER TABLE public.step_runs DROP CONSTRAINT IF EXISTS step_runs_approved_by_fke
 ALTER TABLE public.step_runs ADD CONSTRAINT step_runs_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES auth.users(id) ON DELETE SET NULL;
 
 -- 2. Quota enforcement function (atomic database reservation with reset support)
+DROP FUNCTION IF EXISTS public.check_and_increment_quota(UUID);
+
 CREATE OR REPLACE FUNCTION public.check_and_increment_quota(p_org_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS SETOF public.organizations AS $$
 DECLARE
   v_updated INT;
 BEGIN
@@ -21,6 +23,8 @@ BEGIN
   WHERE id = p_org_id AND quota_used < quota_limit;
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
-  RETURN v_updated > 0;
+  IF v_updated > 0 THEN
+    RETURN QUERY SELECT * FROM public.organizations WHERE id = p_org_id;
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

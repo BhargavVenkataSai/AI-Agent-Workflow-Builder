@@ -86,15 +86,17 @@ export default async (req: Request, res: Response) => {
     const quotaRes = await mutateHasura(
       `
       mutation ReserveWebhookQuota($orgId: uuid!) {
-        check_and_increment_quota(args: {p_org_id: $orgId})
+        check_and_increment_quota(args: {p_org_id: $orgId}) {
+          id
+        }
       }
     `,
       { orgId: workflow.org_id }
     );
 
-    if (!quotaRes?.check_and_increment_quota) {
+    if (!quotaRes?.check_and_increment_quota?.length) {
       return res.status(400).json({
-        message: `Organization quota exceeded for org ${workflow.org_id}`,
+        message: `Organization quota exceeded (${workflow.organization.quota_used}/${workflow.organization.quota_limit})`,
       });
     }
 

@@ -4,10 +4,10 @@
 -- ============================================================
 -- NOTES:
 -- 1. First register users through the nhost Auth UI or API:
---    - owner_a@test.com (password: Test1234!)
---    - editor_a@test.com (password: Test1234!)
---    - viewer_a@test.com (password: Test1234!)
---    - owner_b@test.com (password: Test1234!)
+--    - owner_a@test.com (password: Test@1234#)
+--    - editor_a@test.com (password: Test@1234#)
+--    - viewer_a@test.com (password: Test@1234#)
+--    - owner_b@test.com (password: Test@1234#)
 -- 2. Then run this seed SQL to create orgs and assign users.
 -- 3. Replace the UUIDs below with actual user IDs from auth.users.
 

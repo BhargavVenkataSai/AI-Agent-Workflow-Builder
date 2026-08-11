@@ -1,12 +1,14 @@
 'use client';
 
 interface UsageIndicatorProps {
-  quotaUsed: number;
-  quotaLimit: number;
+  quotaUsed?: number;
+  quotaLimit?: number;
 }
 
-export const UsageIndicator = ({ quotaUsed, quotaLimit }: UsageIndicatorProps) => {
-  const percentage = Math.min(100, Math.max(0, (quotaUsed / quotaLimit) * 100)) || 0;
+export const UsageIndicator = ({ quotaUsed = 0, quotaLimit = 0 }: UsageIndicatorProps) => {
+  const safeUsed = quotaUsed ?? 0;
+  const safeLimit = quotaLimit ?? 0;
+  const percentage = safeLimit > 0 ? Math.min(100, Math.max(0, (safeUsed / safeLimit) * 100)) : 0;
   
   let colorClass = 'usage-progress-good';
   if (percentage > 85) {
@@ -19,7 +21,7 @@ export const UsageIndicator = ({ quotaUsed, quotaLimit }: UsageIndicatorProps) =
     <div className="usage-indicator">
       <div className="usage-header">
         <span className="usage-label">Quota Usage</span>
-        <span className="usage-value">{quotaUsed} / {quotaLimit}</span>
+        <span className="usage-value">{safeUsed} / {safeLimit}</span>
       </div>
       <div className="usage-track">
         <div className={`usage-fill ${colorClass}`} style={{ width: `${percentage}%` }}></div>
@@ -27,3 +29,4 @@ export const UsageIndicator = ({ quotaUsed, quotaLimit }: UsageIndicatorProps) =
     </div>
   );
 };
+

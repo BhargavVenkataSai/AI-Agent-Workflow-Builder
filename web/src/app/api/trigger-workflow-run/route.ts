@@ -372,11 +372,13 @@ export async function POST(req: NextRequest) {
     // Atomic quota reservation
     const quotaRes = await gql(
       `mutation ReserveTriggerQuota($orgId: uuid!) {
-        check_and_increment_quota(args: {p_org_id: $orgId})
+        check_and_increment_quota(args: {p_org_id: $orgId}) {
+          id
+        }
       }`,
       { orgId: workflow.org_id }
     );
-    if (!quotaRes?.check_and_increment_quota)
+    if (!quotaRes?.check_and_increment_quota?.length)
       return NextResponse.json(
         { message: `Organization quota exceeded (${org.quota_used}/${org.quota_limit})` },
         { status: 400 }

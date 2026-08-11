@@ -179,3 +179,31 @@ query GetOrgUsage($orgId: uuid!) {
   }
 }
 `;
+
+export const GET_DASHBOARD_METRICS = gql`
+query GetDashboardMetrics($orgId: uuid!) {
+  organizations_by_pk(id: $orgId) {
+    id
+    name
+    quota_limit
+    quota_used
+    quota_period_start
+  }
+  workflows_aggregate(where: {org_id: {_eq: $orgId}}) {
+    aggregate {
+      count
+    }
+  }
+  active_runs: workflow_runs_aggregate(where: {org_id: {_eq: $orgId}, status: {_eq: "running"}}) {
+    aggregate {
+      count
+    }
+  }
+  completed_runs: workflow_runs_aggregate(where: {org_id: {_eq: $orgId}, status: {_eq: "completed"}}) {
+    aggregate {
+      count
+    }
+  }
+}
+`;
+

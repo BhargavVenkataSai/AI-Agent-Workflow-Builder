@@ -60,10 +60,10 @@ Create accounts through the signup UI:
 
 | Email | Password | Org | Role |
 |---|---|---|---|
-| `owner_a@test.com` | `Test1234!` | Acme AI Labs | owner |
-| `editor_a@test.com` | `Test1234!` | Acme AI Labs | editor |
-| `viewer_a@test.com` | `Test1234!` | Acme AI Labs | viewer |
-| `owner_b@test.com` | `Test1234!` | Beta Corp | owner |
+| `owner_a@test.com` | `Test@1234#` | Acme AI Labs | owner |
+| `editor_a@test.com` | `Test@1234#` | Acme AI Labs | editor |
+| `viewer_a@test.com` | `Test@1234#` | Acme AI Labs | viewer |
+| `owner_b@test.com` | `Test@1234#` | Beta Corp | owner |
 
 ### 7. Apply Seed Data
 In the Hasura Console SQL tab (http://localhost:9695), run the contents of `nhost/seeds/default/001_demo_data.sql`.
