@@ -17,7 +17,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const orgDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { selectedOrgId, selectedOrgRole, setSelectedOrg } = useOrg();
+  const { selectedOrgId, setSelectedOrg } = useOrg();
 
   const { data: orgData, loading: orgsLoading } = useQuery(GET_USER_ORGS, {
     variables: { userId: user?.id },
@@ -45,7 +45,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (orgData?.org_members?.length > 0 && !selectedOrgId) {
       const firstOrg = orgData.org_members[0];
-      setSelectedOrg(firstOrg.organization.id, firstOrg.role);
+      setSelectedOrg(firstOrg.organization.id);
     }
   }, [orgData, selectedOrgId, setSelectedOrg]);
 
@@ -67,10 +67,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const selectedMember = orgData?.org_members?.find((m: any) => m.organization.id === selectedOrgId);
   const currentOrg = selectedMember?.organization || (orgData?.org_members?.[0]?.organization);
-  const currentRole = selectedMember?.role || (orgData?.org_members?.[0]?.role) || selectedOrgRole || 'member';
+  const currentRole = selectedMember?.role || (orgData?.org_members?.[0]?.role);
 
   // Format role string (e.g. 'owner' -> 'Owner')
-  const formattedRole = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : 'Member';
+  const formattedRole = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : '';
 
   // Dynamic greeting firstName derivation
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
@@ -192,11 +192,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {currentOrg?.name || (orgsLoading ? 'Loading org...' : 'Default Organization')}
+                  {currentOrg?.name || (orgsLoading ? 'Loading...' : 'No Organization')}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span>{formattedRole}</span>
-                </div>
+                {formattedRole && (
+                  <div style={{ fontSize: '0.7rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>{formattedRole}</span>
+                  </div>
+                )}
               </div>
 
               <svg
@@ -252,7 +254,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           key={member.organization.id}
                           type="button"
                           onClick={() => {
-                            setSelectedOrg(member.organization.id, member.role);
+                            setSelectedOrg(member.organization.id);
                             setOrgDropdownOpen(false);
                           }}
                           style={{
@@ -308,7 +310,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     })
                   ) : (
                     <div style={{ padding: '0.5rem 0.625rem', fontSize: '0.8125rem', color: '#ffffff' }}>
-                      Default Organization (Owner)
+                      No organization membership
                     </div>
                   )}
                 </div>
@@ -319,7 +321,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => {
                     setOrgDropdownOpen(false);
-                    alert(`Managing Organizations for ${currentOrg?.name || 'Acme AI Labs'}\nRole: ${formattedRole}`);
+                    alert(`Managing Organizations for ${currentOrg?.name || 'your organization'}\nRole: ${formattedRole || 'N/A'}`);
                   }}
                   style={{
                     width: '100%',
@@ -433,7 +435,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                 <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
-                <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.1rem 0.35rem', borderRadius: '0.25rem', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', textTransform: 'uppercase' }}>{formattedRole}</span>
+                {formattedRole && (
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.1rem 0.35rem', borderRadius: '0.25rem', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', textTransform: 'uppercase' }}>{formattedRole}</span>
+                )}
               </div>
               <div style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
             </div>
@@ -481,12 +485,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.75rem', color: '#e5e7eb' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
-              <span>{currentOrg?.name || 'Acme AI Labs'}</span>
-              <span style={{ color: '#6b7280' }}>•</span>
-              <span style={{ color: '#3b82f6', fontWeight: 600 }}>{formattedRole}</span>
-            </div>
+            {currentOrg && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.75rem', color: '#e5e7eb' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
+                <span>{currentOrg.name}</span>
+                {formattedRole && (
+                  <>
+                    <span style={{ color: '#6b7280' }}>•</span>
+                    <span style={{ color: '#3b82f6', fontWeight: 600 }}>{formattedRole}</span>
+                  </>
+                )}
+              </div>
+            )}
 
             <Link href="/dashboard/workflows/new" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.375rem', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: '#ffffff' }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>

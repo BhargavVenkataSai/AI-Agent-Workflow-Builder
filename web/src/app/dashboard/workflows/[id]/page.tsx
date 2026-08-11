@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
 import { useUserData } from '@nhost/nextjs';
-import { GET_WORKFLOW_DETAIL, UPDATE_WORKFLOW } from '@/lib/graphql';
+import { GET_WORKFLOW_DETAIL, UPDATE_WORKFLOW, GET_USER_ORGS } from '@/lib/graphql';
 import { useOrg } from '@/components/OrgContext';
 import { StepTypeIcon } from '@/components/StepTypeIcon';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -60,9 +60,18 @@ function getDefaultTriggerConfig(triggerType: string): any {
 export default function WorkflowDetail() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
-  const { selectedOrgId, selectedOrgRole } = useOrg();
-  const canEdit = selectedOrgRole === 'owner' || selectedOrgRole === 'editor';
-  const isOwner = selectedOrgRole === 'owner';
+  const { selectedOrgId } = useOrg();
+  const user = useUserData();
+
+  const { data: userOrgsData } = useQuery(GET_USER_ORGS, {
+    variables: { userId: user?.id },
+    skip: !user?.id,
+  });
+
+  const selectedMember = userOrgsData?.org_members?.find((m: any) => m.organization.id === selectedOrgId);
+  const currentRole = selectedMember?.role;
+  const canEdit = currentRole === 'owner' || currentRole === 'editor';
+  const isOwner = currentRole === 'owner';
 
   const { data, loading, refetch } = useQuery(GET_WORKFLOW_DETAIL, {
     variables: { id },
@@ -71,7 +80,6 @@ export default function WorkflowDetail() {
 
   const [updateWorkflow, { loading: isSaving }] = useMutation(UPDATE_WORKFLOW);
   const [isTriggering, setIsTriggering] = useState(false);
-  const user = useUserData();
 
   const [editMode, setEditMode] = useState(false);
   const [steps, setSteps] = useState<any[]>([]);

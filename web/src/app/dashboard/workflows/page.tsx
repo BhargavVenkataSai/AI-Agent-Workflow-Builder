@@ -1,20 +1,29 @@
 'use client';
 import { useQuery } from '@apollo/client';
 import { useOrg } from '@/components/OrgContext';
-import { GET_ORG_WORKFLOWS } from '@/lib/graphql';
+import { useUserData } from '@nhost/nextjs';
+import { GET_ORG_WORKFLOWS, GET_USER_ORGS } from '@/lib/graphql';
 import { StatusBadge } from '@/components/StatusBadge';
 import Link from 'next/link';
 
 export default function WorkflowsList() {
-  const { selectedOrgId, selectedOrgRole } = useOrg();
+  const { selectedOrgId } = useOrg();
+  const user = useUserData();
+
+  const { data: userOrgsData } = useQuery(GET_USER_ORGS, {
+    variables: { userId: user?.id },
+    skip: !user?.id,
+  });
 
   const { data, loading } = useQuery(GET_ORG_WORKFLOWS, {
     variables: { orgId: selectedOrgId },
     skip: !selectedOrgId,
   });
 
+  const selectedMember = userOrgsData?.org_members?.find((m: any) => m.organization.id === selectedOrgId);
+  const currentRole = selectedMember?.role;
+  const canEdit = currentRole === 'owner' || currentRole === 'editor';
   const workflows = data?.workflows || [];
-  const canEdit = selectedOrgRole === 'owner' || selectedOrgRole === 'editor';
 
   return (
     <>

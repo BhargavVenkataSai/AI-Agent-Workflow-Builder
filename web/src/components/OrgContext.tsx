@@ -1,44 +1,43 @@
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useUserData } from '@nhost/nextjs';
 
 interface OrgContextType {
   selectedOrgId: string | null;
-  selectedOrgRole: string | null;
-  setSelectedOrg: (id: string, role: string) => void;
+  setSelectedOrg: (id: string) => void;
 }
 
 const OrgContext = createContext<OrgContextType>({
   selectedOrgId: null,
-  selectedOrgRole: null,
   setSelectedOrg: () => {},
 });
 
 export const OrgProvider = ({ children }: { children: ReactNode }) => {
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [selectedOrgRole, setSelectedOrgRole] = useState<string | null>(null);
+  const user = useUserData();
 
-  const setSelectedOrg = (id: string, role: string) => {
+  const setSelectedOrg = (id: string) => {
     setSelectedOrgId(id);
-    setSelectedOrgRole(role);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedOrgId', id);
-      localStorage.setItem('selectedOrgRole', role);
+    if (typeof window !== 'undefined' && user?.id) {
+      localStorage.setItem(`selectedOrg:${user.id}`, id);
     }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedId = localStorage.getItem('selectedOrgId');
-      const storedRole = localStorage.getItem('selectedOrgRole');
-      if (storedId && storedRole) {
+    if (typeof window !== 'undefined' && user?.id) {
+      const storedId = localStorage.getItem(`selectedOrg:${user.id}`);
+      if (storedId) {
         setSelectedOrgId(storedId);
-        setSelectedOrgRole(storedRole);
+      } else {
+        setSelectedOrgId(null);
       }
+    } else {
+      setSelectedOrgId(null);
     }
-  }, []);
+  }, [user?.id]);
 
   return (
-    <OrgContext.Provider value={{ selectedOrgId, selectedOrgRole, setSelectedOrg }}>
+    <OrgContext.Provider value={{ selectedOrgId, setSelectedOrg }}>
       {children}
     </OrgContext.Provider>
   );

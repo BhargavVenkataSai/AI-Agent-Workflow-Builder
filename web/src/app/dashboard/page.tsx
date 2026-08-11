@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function DashboardHome() {
   const user = useUserData();
-  const { selectedOrgId, selectedOrgRole } = useOrg();
+  const { selectedOrgId } = useOrg();
 
   const { data: userOrgsData } = useQuery(GET_USER_ORGS, {
     variables: { userId: user?.id },
@@ -28,8 +28,8 @@ export default function DashboardHome() {
 
   const selectedMember = userOrgsData?.org_members?.find((m: any) => m.organization.id === selectedOrgId);
   const org = metricsData?.organizations_by_pk || selectedMember?.organization || userOrgsData?.org_members?.[0]?.organization;
-  const currentRole = selectedMember?.role || userOrgsData?.org_members?.[0]?.role || selectedOrgRole || 'member';
-  const formattedRole = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : 'Member';
+  const currentRole = selectedMember?.role || userOrgsData?.org_members?.[0]?.role;
+  const formattedRole = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : '';
 
   const workflows = workflowsData?.workflows || [];
   const totalWorkflowsCount = metricsData?.workflows_aggregate?.aggregate?.count ?? workflows.length;
@@ -196,12 +196,14 @@ export default function DashboardHome() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Organization</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '9999px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                {formattedRole}
-              </span>
+              {formattedRole && (
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '9999px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                  {formattedRole}
+                </span>
+              )}
             </div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.25rem 0' }}>
-              {org?.name || 'Acme AI Labs'}
+              {org?.name || 'Loading...'}
             </h3>
             <p style={{ fontSize: '0.8125rem', color: '#9ca3af', margin: 0 }}>
               Slug: <code style={{ color: '#60a5fa', background: 'rgba(0,0,0,0.2)', padding: '0.1rem 0.3rem', borderRadius: '0.25rem' }}>{org?.slug || 'acme-ai-labs'}</code>

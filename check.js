@@ -1,16 +1,30 @@
-
 (async () => {
+  const NHOST_URL = 'https://soouvxhgygbxyeooczsu.auth.ap-south-1.nhost.run/v1/signin/email-password';
   const HASURA_URL = 'https://soouvxhgygbxyeooczsu.hasura.ap-south-1.nhost.run/v1/graphql';
-  const ADMIN_SECRET = 'Tav*yoX!12-EnPkI;-1sEY(l7WqlKZXd';
 
-  // Run as user
-  const res = await fetch(HASURA_URL, {
+  // 1. Sign in to get JWT
+  const authRes = await fetch(NHOST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'owner_a@test.com', password: 'Test@1234#' })
+  });
+  
+  const authData = await authRes.json();
+  if (authData.error) {
+    console.log("Auth Error:", authData.error);
+    return;
+  }
+  
+  const accessToken = authData.session.accessToken;
+  const userId = authData.session.user.id;
+  console.log("Logged in! User ID:", userId);
+
+  // 2. Query Hasura with the JWT (exactly as frontend does)
+  const gqlRes = await fetch(HASURA_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-hasura-admin-secret': ADMIN_SECRET,
-      'x-hasura-role': 'user',
-      'x-hasura-user-id': '676e9574-3840-4f9b-8d40-093e436042c2'
+      'Authorization': `Bearer ${accessToken}`
     },
     body: JSON.stringify({ 
       query: `
@@ -25,12 +39,10 @@
           }
         }
       `,
-      variables: {
-        userId: "676e9574-3840-4f9b-8d40-093e436042c2"
-      }
+      variables: { userId: userId }
     })
   });
   
-  const json = await res.json();
-  console.log(JSON.stringify(json, null, 2));
+  const gqlData = await gqlRes.json();
+  console.log("GraphQL Response:", JSON.stringify(gqlData, null, 2));
 })();
