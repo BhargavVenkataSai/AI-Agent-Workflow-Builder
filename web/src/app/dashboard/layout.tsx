@@ -6,6 +6,7 @@ import { useQuery } from '@apollo/client';
 import Link from 'next/link';
 import { GET_USER_ORGS } from '@/lib/graphql';
 import { OrgProvider, useOrg } from '@/components/OrgContext';
+import { OrgSettingsModal } from '@/components/OrgSettingsModal';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthenticationStatus();
@@ -16,6 +17,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const orgDropdownRef = useRef<HTMLDivElement>(null);
 
   const { selectedOrgId, setSelectedOrg } = useOrg();
@@ -390,7 +392,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => {
                     setOrgDropdownOpen(false);
-                    alert(`Managing Organizations for ${currentOrg?.name || 'your organization'}\nRole: ${formattedRole || 'N/A'}`);
+                    setIsSettingsOpen(true);
                   }}
                   style={{
                     width: '100%',
@@ -478,12 +480,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 Management
               </span>
             )}
-            <button 
-              type="button"
+            <Link 
+              href="/dashboard/settings"
               title={sidebarCollapsed ? "Settings" : undefined}
-              onClick={() => alert(`Organization Settings for ${currentOrg?.name || 'Organization'}\nRole: ${formattedRole}`)}
+              onClick={() => setIsSettingsOpen(true)}
               style={{
-                width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
@@ -492,16 +493,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 borderRadius: '0.5rem',
                 fontSize: '0.875rem',
                 fontWeight: 500,
-                color: '#9ca3af',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left'
+                color: pathname.includes('/settings') ? '#ffffff' : '#9ca3af',
+                backgroundColor: pathname.includes('/settings') ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                borderLeft: sidebarCollapsed ? 'none' : (pathname.includes('/settings') ? '3px solid #3b82f6' : '3px solid transparent'),
+                transition: 'all 0.15s ease'
               }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
               {!sidebarCollapsed && <span>Settings</span>}
-            </button>
+            </Link>
           </div>
         </nav>
 
@@ -591,6 +591,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      <OrgSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        org={currentOrg}
+        userRole={currentRole}
+      />
     </div>
   );
 }
