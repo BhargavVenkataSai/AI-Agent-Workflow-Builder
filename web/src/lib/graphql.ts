@@ -111,9 +111,22 @@ subscription WatchWorkflowRun($runId: uuid!) {
   workflow_runs_by_pk(id: $runId) {
     id
     status
+    trigger_type
     started_at
     completed_at
     error
+    workflow_id
+    workflow {
+      id
+      name
+      org_id
+      workflow_steps(order_by: {step_order: asc}) {
+        id
+        step_order
+        step_type
+        name
+      }
+    }
   }
 }
 `;

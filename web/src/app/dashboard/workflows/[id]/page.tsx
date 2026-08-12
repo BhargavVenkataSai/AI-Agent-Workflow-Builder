@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
 import { useUserData } from '@nhost/nextjs';
@@ -203,10 +203,31 @@ export default function WorkflowDetail() {
     }
   };
 
-  const handleRun = async () => {
-    if (editMode) {
-      await handleSave();
+  const [showRunModal, setShowRunModal] = useState(false);
+  const [initialPayload, setInitialPayload] = useState('{\n  "lead_source": "website_form",\n  "contact_email": "prospect@example.com"\n}');
+  const [runModalError, setRunModalError] = useState<string | null>(null);
+
+  const isPayloadValidJson = useMemo(() => {
+    if (!initialPayload.trim()) return true;
+    try {
+      JSON.parse(initialPayload);
+      return true;
+    } catch {
+      return false;
     }
+  }, [initialPayload]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showRunModal) {
+        setShowRunModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showRunModal]);
+
+  const handleDirectRun = async (customPayload?: any) => {
     const activeSteps = workflow?.workflow_steps || steps;
     if (!activeSteps || activeSteps.length === 0) {
       alert('Cannot run workflow: Please click "+ Add Step" to configure steps for this workflow before running.');
@@ -222,20 +243,56 @@ export default function WorkflowDetail() {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ workflow_id: id }),
+        body: JSON.stringify({ 
+          workflow_id: id,
+          initial_payload: customPayload || {} 
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Error triggering run');
+        throw new Error(data.message || 'Unable to start workflow');
       }
       if (data.workflow_run_id) {
+        setShowRunModal(false);
         router.push(`/dashboard/runs/${data.workflow_run_id}`);
       }
     } catch (err: any) {
-      alert(err.message || 'Error triggering run');
+      alert(err.message || 'Unable to start workflow');
     } finally {
       setIsTriggering(false);
     }
+  };
+
+  const handleOpenRunModal = () => {
+    const activeSteps = workflow?.workflow_steps || steps;
+    if (!activeSteps || activeSteps.length === 0) {
+      alert('Cannot run workflow: Please click "+ Add Step" to configure steps for this workflow before running.');
+      return;
+    }
+    setRunModalError(null);
+    setShowRunModal(true);
+  };
+
+  const handleExecuteRun = async () => {
+    if (!isPayloadValidJson || isTriggering) return;
+    
+    let parsedPayload = {};
+    try {
+      if (initialPayload.trim()) {
+        parsedPayload = JSON.parse(initialPayload);
+      }
+    } catch (e: any) {
+      setRunModalError('Invalid JSON format: Expected a valid JSON object.');
+      return;
+    }
+
+    setRunModalError(null);
+    await handleDirectRun(parsedPayload);
+  };
+
+  const handleRun = async () => {
+    // Single-click direct execution on main button
+    await handleDirectRun();
   };
 
   const handleAddStepClick = () => {
@@ -306,9 +363,27 @@ export default function WorkflowDetail() {
             </>
           )}
           {canEdit && !editMode && (
-            <button onClick={handleRun} disabled={isTriggering} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              {isTriggering ? 'Starting...' : '▶ Run Workflow'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+              <button 
+                onClick={handleRun} 
+                disabled={isTriggering} 
+                className="btn btn-primary" 
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', fontWeight: 700, padding: '0.6rem 1.25rem' }}
+              >
+                {isTriggering ? 'Starting...' : '▶ Run Workflow'}
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenRunModal}
+                disabled={isTriggering}
+                title="Configure custom execution payload"
+                aria-label="Configure custom execution payload"
+                className="btn btn-secondary"
+                style={{ padding: '0.6rem 0.75rem', color: '#9ca3af' }}
+              >
+                ⚙
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -620,6 +695,244 @@ x-webhook-secret: <your-secret>
           )}
         </div>
       </div>
+
+      {/* Run Workflow Execution Modal */}
+      {showRunModal && (
+        <div 
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="run-workflow-title"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1.5rem'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowRunModal(false);
+          }}
+        >
+          <div 
+            className="glass-card" 
+            style={{ 
+              width: '640px', 
+              maxWidth: '92vw', 
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#111827', 
+              border: '1px solid rgba(255, 255, 255, 0.15)', 
+              borderRadius: '14px', 
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+              overflow: 'hidden',
+              animation: 'slideUp 0.15s ease-out'
+            }}
+          >
+            {/* Header */}
+            <div style={{ padding: '1.5rem 1.75rem 1.25rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h2 id="run-workflow-title" style={{ fontSize: '1.625rem', fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
+                    Run Workflow
+                  </h2>
+                  <div style={{ fontSize: '0.9375rem', fontWeight: 500, color: '#d1d5db', marginTop: '0.25rem' }}>
+                    {workflow.name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8125rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                    <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                    <span>Manual trigger • New execution</span>
+                  </div>
+                </div>
+
+                <button 
+                  type="button" 
+                  onClick={() => setShowRunModal(false)}
+                  aria-label="Close modal"
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.05)', 
+                    border: '1px solid rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '8px', 
+                    color: '#9ca3af', 
+                    cursor: 'pointer', 
+                    width: '32px', 
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.125rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '1.5rem 1.75rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* Error banner if submission failed */}
+              {runModalError && (
+                <div style={{ padding: '0.875rem 1rem', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#f87171', fontSize: '0.875rem' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>Unable to start workflow</div>
+                  <div>{runModalError}</div>
+                </div>
+              )}
+
+              {/* Execution Input Section */}
+              <div>
+                <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.2rem' }}>
+                  Execution Input
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: '#9ca3af', marginBottom: '0.875rem' }}>
+                  Provide the initial data that will be passed to the first step.
+                </div>
+
+                {/* Code Container Box */}
+                <div style={{ 
+                  borderRadius: '8px', 
+                  border: '1px solid rgba(255, 255, 255, 0.12)', 
+                  backgroundColor: '#0d1117',
+                  overflow: 'hidden'
+                }}>
+                  {/* Header Bar */}
+                  <div style={{ 
+                    padding: '0.5rem 0.875rem', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span>Execution Payload</span>
+                      <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.06)', color: '#60a5fa' }}>JSON</span>
+                    </div>
+
+                    {/* Real-time Validation Indicator Badge */}
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {isPayloadValidJson ? (
+                        <span style={{ color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.12)' }}>
+                          ✓ Valid JSON
+                        </span>
+                      ) : (
+                        <span style={{ color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.12)' }}>
+                          ⚠ Invalid JSON
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Textarea */}
+                  <textarea
+                    rows={7}
+                    value={initialPayload}
+                    onChange={(e) => setInitialPayload(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.stopPropagation();
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      fontSize: '0.8125rem',
+                      lineHeight: 1.5,
+                      backgroundColor: 'transparent',
+                      color: '#e2e8f0',
+                      border: 'none',
+                      outline: 'none',
+                      padding: '0.875rem',
+                      resize: 'vertical',
+                      minHeight: '180px',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="{}"
+                  />
+                </div>
+
+                {/* Validation Error Hint */}
+                {!isPayloadValidJson && (
+                  <div style={{ fontSize: '0.78125rem', color: '#ef4444', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>⚠ Invalid JSON: Expected a valid JSON object.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* What Will Happen Summary Box */}
+              <div style={{ 
+                padding: '0.875rem 1rem', 
+                backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+                border: '1px solid rgba(255, 255, 255, 0.08)', 
+                borderRadius: '8px',
+                fontSize: '0.8125rem'
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trigger Mode</div>
+                    <div style={{ fontWeight: 600, color: '#ffffff', marginTop: '0.2rem' }}>▶ Manual</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>First Step</div>
+                    <div style={{ fontWeight: 600, color: '#ffffff', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      → {displaySteps[0]?.name || 'Step 1'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Steps</div>
+                    <div style={{ fontWeight: 600, color: '#ffffff', marginTop: '0.2rem' }}>
+                      → {displaySteps.length} {displaySteps.length === 1 ? 'step' : 'steps'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Actions */}
+            <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowRunModal(false)}
+                className="btn btn-secondary"
+                disabled={isTriggering}
+                style={{ padding: '0.625rem 1.25rem', fontSize: '0.875rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteRun}
+                disabled={!isPayloadValidJson || isTriggering}
+                className="btn btn-primary"
+                style={{ 
+                  background: (!isPayloadValidJson || isTriggering)
+                    ? '#374151'
+                    : 'linear-gradient(135deg, #10b981, #059669)',
+                  borderColor: (!isPayloadValidJson || isTriggering) ? '#4b5563' : '#059669',
+                  color: '#ffffff',
+                  fontWeight: 700, 
+                  padding: '0.625rem 1.5rem',
+                  fontSize: '0.875rem',
+                  cursor: (!isPayloadValidJson || isTriggering) ? 'not-allowed' : 'pointer',
+                  boxShadow: (!isPayloadValidJson || isTriggering) ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {isTriggering ? '◌ Starting workflow...' : '▶ Run Workflow'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </>
   );
 }
