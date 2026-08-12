@@ -11,16 +11,6 @@ query GetUserOrgs($userId: uuid!) {
       slug
       quota_limit
       quota_used
-      org_members {
-        id
-        role
-        user_id
-        user {
-          id
-          email
-          displayName
-        }
-      }
     }
   }
 }
